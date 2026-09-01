@@ -1,0 +1,4 @@
+httpx==0.28.*
+requests==2.32.*
+requests-auth==8.*          # Digest auth for Hikvision ISAPI
+xmltodict==0.14.*

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block page_title %}🔎 AcuSeek Image Search{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-lg shadow p-6">
+    <form class="flex gap-3 mb-6"
+          hx-get="/api/search-results"
+          hx-target="#search-results"
+          hx-trigger="submit">
+        <input name="q"
+               type="text"
+               placeholder='Describe what you're looking for... e.g. "red forklift near loading dock", "person in yellow vest"'
+               class="border rounded flex-1 px-4 py-3 text-lg">
+        <button class="bg-blue-600 text-white px-6 py-3 rounded">Search</button>
+    </form>
+    <div id="search-results" class="grid grid-cols-3 gap-4">
+        <div class="col-span-3 text-slate-400 text-center py-10">Type a description to search surveillance snapshots.</div>
+    </div>
+</div>
+
+{% endblock %}

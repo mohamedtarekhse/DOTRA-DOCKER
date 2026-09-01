@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Cameras</h2>
+        <p class="text-sm text-slate-500 mb-3">Manage camera registry, RTSP URLs and zone assignment.</p>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Add Camera</button>
+    </div>
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Zone Rules</h2>
+        <p class="text-sm text-slate-500 mb-3">Configure restricted zones and alert thresholds.</p>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Edit Zones</button>
+    </div>
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Notification Channels</h2>
+        <p class="text-sm text-slate-500 mb-3">Configure Telegram bot for manager alerts.</p>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Configure</button>
+    </div>
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Data Retention</h2>
+        <p class="text-sm text-slate-500 mb-3">Auto-cleanup of images older than 90 days.</p>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded">Configure</button>
+    </div>
+</div>
+
+{% endblock %}

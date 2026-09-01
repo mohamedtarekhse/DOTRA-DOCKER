@@ -1,0 +1,15 @@
+# Cloudflare Tunnel ingress config.
+# Remote access without opening any router ports.
+# Replace *.yourfactory.com with your real domain.
+
+tunnel: YOUR-TUNNEL-UUID
+credentials-file: /home/nonroot/.cloudflared/YOUR-TUNNEL-UUID.json
+
+ingress:
+  - hostname: dash.yourfactory.com
+    service: http://dashboard:8000
+  - hostname: api.yourfactory.com
+    service: http://api:8000
+  - hostname: media.yourfactory.com
+    service: http://nginx:80
+  - service: http_status:404

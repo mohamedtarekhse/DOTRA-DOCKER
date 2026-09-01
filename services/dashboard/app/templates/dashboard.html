@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-lg shadow">
+        <div class="text-sm text-slate-500">Cameras</div>
+        <div class="text-3xl font-bold">{{ cameras|length }}</div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow">
+        <div class="text-sm text-slate-500">Whitelisted Vehicles</div>
+        <div class="text-3xl font-bold">{{ vehicles|length }}</div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow">
+        <div class="text-sm text-slate-500">Active Alerts</div>
+        <div class="text-3xl font-bold text-red-600">{{ alerts|length }}</div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow">
+        <div class="text-sm text-slate-500">System Status</div>
+        <div class="text-3xl font-bold text-green-600">●</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Live Gate Feeds</h2>
+        <div class="grid grid-cols-2 gap-3 text-center text-sm text-slate-400">
+            <div class="bg-slate-100 rounded p-6">Gate 1 (LPR)</div>
+            <div class="bg-slate-100 rounded p-6">Gate 2 (LPR)</div>
+        </div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-5">
+        <h2 class="font-semibold mb-3">Recent Alerts</h2>
+        {% if alerts %}
+        <ul class="space-y-2 text-sm">
+            {% for a in alerts[:5] %}
+            <li class="flex justify-between border-b pb-2">
+                <span class="text-red-600">🚨 {{ a.alert_type }}</span>
+                <span class="text-slate-400">{{ a.created_at }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-400 text-sm">No alerts</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

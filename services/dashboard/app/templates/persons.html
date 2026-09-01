@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Persons{% endblock %}
+{% block page_title %}Personnel & Face Enrollment{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-lg shadow p-5 mb-6">
+    <h2 class="font-semibold mb-3">Add Person</h2>
+    <form class="grid grid-cols-3 gap-3">
+        <input type="text" placeholder="Full Name" class="border rounded px-3 py-2">
+        <input type="text" placeholder="Department" class="border rounded px-3 py-2">
+        <input type="text" placeholder="Access Level" class="border rounded px-3 py-2">
+        <button class="bg-blue-600 text-white rounded px-4 py-2">Add Person</button>
+    </form>
+</div>
+
+<div class="bg-white rounded-lg shadow p-5">
+    <h2 class="font-semibold mb-3">Enroll Face (Photo Upload)</h2>
+    <form class="flex gap-3 items-center">
+        <input type="file" accept="image/*" class="border rounded px-3 py-2">
+        <button class="bg-green-600 text-white rounded px-4 py-2">Generate Embedding & Enroll</button>
+    </form>
+</div>
+
+<table class="w-full text-sm bg-white rounded-lg shadow mt-6">
+    <thead>
+        <tr class="text-left text-slate-500 border-b">
+            <th class="py-2 px-5">Name</th>
+            <th>Department</th>
+            <th>Access Level</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in persons %}
+        <tr class="border-b">
+            <td class="py-2 px-5 font-medium">{{ p.full_name }}</td>
+            <td>{{ p.department or '-' }}</td>
+            <td>{{ p.access_level }}</td>
+            <td>{% if p.is_active %}<span class="text-green-600">Active</span>{% else %}<span class="text-red-600">Inactive</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="py-4 text-slate-400 text-center">No personnel registered</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

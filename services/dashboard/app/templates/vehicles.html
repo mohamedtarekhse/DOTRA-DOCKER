@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Vehicles{% endblock %}
+{% block page_title %}Vehicle Whitelist{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-lg shadow p-5 mb-6">
+    <h2 class="font-semibold mb-3">Add Vehicle</h2>
+    <form class="grid grid-cols-3 gap-3">
+        <input type="text" placeholder="Plate Number" class="border rounded px-3 py-2">
+        <input type="text" placeholder="Owner Name" class="border rounded px-3 py-2">
+        <input type="text" placeholder="Vehicle Type" class="border rounded px-3 py-2">
+        <input type="text" placeholder="Department" class="border rounded px-3 py-2">
+        <button class="bg-blue-600 text-white rounded px-4 py-2">Add to Whitelist</button>
+    </form>
+</div>
+
+<div class="bg-white rounded-lg shadow p-5">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-slate-500 border-b">
+                <th class="py-2">Plate</th>
+                <th>Owner</th>
+                <th>Type</th>
+                <th>Department</th>
+                <th>Whitelisted</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vehicles %}
+            <tr class="border-b">
+                <td class="py-2 font-medium">{{ v.plate_number }}</td>
+                <td>{{ v.owner_name or '-' }}</td>
+                <td>{{ v.vehicle_type or '-' }}</td>
+                <td>{{ v.department or '-' }}</td>
+                <td>{% if v.is_whitelisted %}<span class="text-green-600">✓</span>{% else %}<span class="text-red-600">✗</span>{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="py-4 text-slate-400 text-center">No vehicles yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
