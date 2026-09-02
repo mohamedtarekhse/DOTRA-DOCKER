@@ -169,20 +169,14 @@ services:
       - backend
 
   ai-engine:
-    build: ./services/ai-engine
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile.cpu
     container_name: acuseek_ai_engine
     restart: unless-stopped
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     environment:
       MODEL_DIR: /models
-      NVIDIA_VISIBLE_DEVICES: all
+      ACUSEEK_CPU_ONLY: 1
     volumes:
       - ./data/models:/models
       - media:/media
