@@ -24,7 +24,15 @@ class SearchService:
         camera_id: str | None = None, from_time: str | None = None, to_time: str | None = None,
     ) -> list[dict]:
         query_vec = await _embed_query(query)
-        vec_str = "[" + ",".join(str(f"{v:.6f}") for v in query_vec) + "]"
+        frags = []
+        for v in query_vec:
+            try:
+                frags.append(f"{float(v):.6f}")
+            except (TypeError, ValueError):
+                continue
+        if not frags:
+            return []
+        vec_str = "[" + ",".join(frags) + "]"
 
         sql = f"""
             SELECT ie.image_id, is.image_url, is.captured_at,
@@ -34,11 +42,11 @@ class SearchService:
             JOIN image_store is ON is.id = ie.image_id
             LEFT JOIN cameras c ON c.id = is.camera_id
             {self._conditions(camera_id, from_time, to_time)}
-            ORDER BY ie.clip_embedding <=> '{vec_str}'::vector
+            ORDER BY ie.clip_embedding <=> :vec_str::vector
             LIMIT :limit
         """
         cond_params = self._bind_params(camera_id, from_time, to_time)
-        result = await db.execute(text(sql), {**cond_params, "limit": limit})
+        result = await db.execute(text(sql), {**cond_params, "limit": limit, "vec_str": vec_str})
         rows = result.fetchall()
         return [
             {

@@ -1,5 +1,3 @@
-import uuid
-
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import select
@@ -8,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..database import get_db
 from ..models import Person, FaceEmbedding
+from ..routers.auth import get_current_user
 from ..schemas.person import PersonCreate, PersonOut, FaceEnrollIn, FaceMatchIn
 from ..services.storage_service import storage
 
-router = APIRouter(prefix="/persons", tags=["persons"])
+router = APIRouter(prefix="/persons", tags=["persons"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=PersonOut)

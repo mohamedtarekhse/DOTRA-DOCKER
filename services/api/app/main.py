@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
-from .routers import auth, vehicles, gates, persons, search, cameras, alerts, websocket
+from .routers import auth, vehicles, gates, persons, search, cameras, alerts, websocket, permits
 from .services.storage_service import storage
 
 
@@ -43,6 +43,7 @@ app.include_router(persons.router, prefix=API_PREFIX)
 app.include_router(search.router, prefix=API_PREFIX)
 app.include_router(cameras.router, prefix=API_PREFIX)
 app.include_router(alerts.router, prefix=API_PREFIX)
+app.include_router(permits.router, prefix=API_PREFIX)
 app.include_router(websocket.router)
 
 

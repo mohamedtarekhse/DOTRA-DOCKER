@@ -38,6 +38,17 @@ class CameraCreate(CameraBase):
     pass
 
 
+class CameraUpdate(BaseModel):
+    name: Optional[str] = None
+    ip_address: Optional[str] = None
+    camera_type: Optional[str] = None
+    rtsp_url: Optional[str] = None
+    isapi_url: Optional[str] = None
+    zone_id: Optional[UUID] = None
+    is_active: Optional[bool] = None
+    config: Optional[dict] = None
+
+
 class CameraOut(CameraBase):
     id: UUID
     is_active: bool

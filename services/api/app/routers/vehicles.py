@@ -1,15 +1,16 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..models import Vehicle, VehicleEvent
-from ..schemas.vehicle import VehicleCreate, VehicleOut
+from ..routers.auth import get_current_user
+from ..schemas.vehicle import VehicleCreate, VehicleOut, VehicleUpdate
 
-router = APIRouter(prefix="/vehicles", tags=["vehicles"])
+router = APIRouter(prefix="/vehicles", tags=["vehicles"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=VehicleOut)
@@ -60,6 +61,18 @@ async def delete_vehicle(vehicle_id: UUID, db: AsyncSession = Depends(get_db)):
     await db.delete(vehicle)
     await db.commit()
     return {"deleted": str(vehicle_id)}
+
+
+@router.patch("/{vehicle_id}", response_model=VehicleOut)
+async def update_vehicle(vehicle_id: UUID, payload: VehicleUpdate, db: AsyncSession = Depends(get_db)):
+    vehicle = await db.get(Vehicle, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(vehicle, key, value)
+    await db.commit()
+    await db.refresh(vehicle)
+    return vehicle
 
 
 @router.get("/{plate}/events")

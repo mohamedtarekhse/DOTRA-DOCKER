@@ -1,9 +1,13 @@
 import json
+from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Vehicle, VehicleEvent, WhitelistPermission
+from ..routers.websocket import manager
+from ..services.mqtt_service import mqtt_service
 from ..services.notify_service import notify
 
 
@@ -19,12 +23,14 @@ class GateService:
 
         permitted = False
         if vehicle and vehicle.is_whitelisted:
-            # check whitelist permission validity
+            now = datetime.now(timezone.utc)
             validity = await db.execute(
                 select(WhitelistPermission)
                 .where(
                     WhitelistPermission.vehicle_id == vehicle.id,
                     WhitelistPermission.is_active.is_(True),
+                    WhitelistPermission.valid_from <= now,
+                    WhitelistPermission.valid_until >= now,
                 )
             )
             permit = validity.scalars().first()
@@ -73,18 +79,49 @@ class GateService:
         if event_type == "exit_pending":
             await notify.send_exit_approval_request(str(event.id), plate)
 
+        await manager.broadcast({
+            "type": "gate_event",
+            "event_id": str(event.id),
+            "event_type": event_type,
+            "plate": plate,
+            "direction": direction,
+            "decision": decision,
+            "event_time": event.event_time.isoformat() if event.event_time else None,
+        })
+
+        mqtt_service.publish("acuseek/gate", {
+            "event_id": str(event.id),
+            "event_type": event_type,
+            "plate": plate,
+            "direction": direction,
+            "decision": decision,
+        })
+
         return {"event_id": str(event.id), "event_type": event_type, "decision": decision}
 
     async def resolve_exit(
         self, db: AsyncSession, event_id: str, approved: bool, manager: str,
     ) -> dict:
-        evt = await db.get(VehicleEvent, event_id)
+        try:
+            event_uuid = UUID(event_id)
+        except ValueError:
+            return {"error": "event not found"}
+        evt = await db.get(VehicleEvent, event_uuid)
         if evt is None:
             return {"error": "event not found"}
 
         evt.event_type = "exit_granted" if approved else "exit_denied"
         evt.approved_by = manager
         await db.commit()
+
+        await manager.broadcast({
+            "type": "gate_event",
+            "event_id": str(event_id),
+            "event_type": evt.event_type,
+            "plate": evt.plate_number,
+            "approved": approved,
+            "manager": manager,
+        })
 
         return {
             "event_id": str(event_id),

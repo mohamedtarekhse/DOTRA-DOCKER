@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,19 +25,34 @@ def create_token(username: str, role: str = "admin") -> str:
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        return {"username": payload.get("sub"), "role": payload.get("role")}
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    return {"username": payload.get("sub"), "role": payload.get("role")}
+
+
+def require_role(*roles: str):
+    """Return a dependency that requires any valid user, optionally restricted to roles."""
+    async def _dep(user: dict = Depends(get_current_user)):
+        if roles and user.get("role") not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient privileges")
+        return user
+    return _dep
+
+
+async def require_device(x_secret: str | None = Header(None, alias="X-Secret")):
+    """Authenticate internal services (LPR camera push, intrusion detections)."""
+    if x_secret is None or x_secret != settings.LPR_EVENT_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return {"source": "device"}
 
 
 @router.post("/login", response_model=Token)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
-    env_user = settings.JWT_SECRET  # placeholder for real user store
-    if payload.username == "admin" and payload.password == "acuseek":
+    if payload.username == settings.ADMIN_USERNAME and payload.password == settings.ADMIN_PASSWORD:
         return Token(access_token=create_token(payload.username, "admin"))
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 @router.get("/me")
-async def me(user=Depends(get_current_user)):
+async def me(user: dict = Depends(get_current_user)):
     return user

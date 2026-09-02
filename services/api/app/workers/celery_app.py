@@ -16,6 +16,13 @@ celery_app.conf.update(
     enable_utc=True,
     task_track_started=True,
     worker_max_tasks_per_child=200,
+    beat_schedule={
+        "cleanup-old-images-daily": {
+            "task": "app.workers.indexer_tasks.cleanup_old_data",
+            "schedule": 86400.0,
+            "args": (90,),
+        },
+    },
 )
 
 celery_app.autodiscover_tasks(["app.workers"])

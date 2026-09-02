@@ -5,11 +5,12 @@
 
 <div class="bg-white rounded-lg shadow p-5 mb-6">
     <h2 class="font-semibold mb-3">Add Vehicle</h2>
-    <form class="grid grid-cols-3 gap-3">
-        <input type="text" placeholder="Plate Number" class="border rounded px-3 py-2">
-        <input type="text" placeholder="Owner Name" class="border rounded px-3 py-2">
-        <input type="text" placeholder="Vehicle Type" class="border rounded px-3 py-2">
-        <input type="text" placeholder="Department" class="border rounded px-3 py-2">
+    <form method="post" action="/vehicles/add" class="grid grid-cols-5 gap-3">
+        <input name="plate_number" type="text" placeholder="Plate Number" required
+               class="border rounded px-3 py-2">
+        <input name="owner_name" type="text" placeholder="Owner Name" class="border rounded px-3 py-2">
+        <input name="vehicle_type" type="text" placeholder="Vehicle Type" class="border rounded px-3 py-2">
+        <input name="department" type="text" placeholder="Department" class="border rounded px-3 py-2">
         <button class="bg-blue-600 text-white rounded px-4 py-2">Add to Whitelist</button>
     </form>
 </div>
@@ -23,6 +24,7 @@
                 <th>Type</th>
                 <th>Department</th>
                 <th>Whitelisted</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -33,6 +35,11 @@
                 <td>{{ v.vehicle_type or '-' }}</td>
                 <td>{{ v.department or '-' }}</td>
                 <td>{% if v.is_whitelisted %}<span class="text-green-600">✓</span>{% else %}<span class="text-red-600">✗</span>{% endif %}</td>
+                <td>
+                    <form method="post" action="/vehicles/{{ v.id }}/delete" onsubmit="return confirm('Remove {{ v.plate_number }} from whitelist?');">
+                        <button class="text-red-600 text-xs">Remove</button>
+                    </form>
+                </td>
             </tr>
             {% else %}
             <tr><td colspan="5" class="py-4 text-slate-400 text-center">No vehicles yet</td></tr>

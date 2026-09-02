@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
+from ..routers.auth import get_current_user
 from ..services.search_service import search_service
 from ..schemas.search import SearchResult
 
-router = APIRouter(prefix="/search", tags=["search"])
+router = APIRouter(prefix="/search", tags=["search"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/images", response_model=list[SearchResult])

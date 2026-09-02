@@ -21,6 +21,13 @@ class ISAPIClient:
         resp.raise_for_status()
         return resp.content
 
+    def get_plates(self) -> str:
+        """Return the raw XML body of recent recognized plates (GET plates channel)."""
+        resp = requests.get(f"{self.base}/ISAPI/Traffic/channels/1/vehicleDetect/plates",
+                            auth=self.auth, timeout=self.timeout)
+        resp.raise_for_status()
+        return resp.text
+
     def test_connection(self) -> bool:
         try:
             resp = requests.get(f"{self.base}/ISAPI/System/deviceInfo",

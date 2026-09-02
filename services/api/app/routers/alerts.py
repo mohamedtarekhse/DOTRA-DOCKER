@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -5,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..models import AlertEvent
+from ..routers.auth import get_current_user, require_device
 from ..schemas.alert import AlertOut, AlertUpdate
 from ..services.alert_service import alert_service
 
@@ -18,10 +22,11 @@ class IntrusionIn(BaseModel):
 
 
 @router.post("/intrusion")
-async def intrusion(payload: IntrusionIn, db: AsyncSession = Depends(get_db)):
+async def intrusion(payload: IntrusionIn, db: AsyncSession = Depends(get_db),
+                    device: dict = Depends(require_device)):
     """Called by stream-processor when a restricted zone breach is detected."""
     desc = f"Unauthorized movement in {payload.zone}: " + ", ".join(
-        f"{d.get('label','?')}({d.get('confidence',0):.2f})" for d in payload.detections
+        f"{d.get('label','?')}({(d.get('confidence') or 0):.2f})" for d in payload.detections
     )
     alert = await alert_service.create_alert(
         db,
@@ -35,7 +40,8 @@ async def intrusion(payload: IntrusionIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("", response_model=list[AlertOut])
-async def list_alerts(status: str | None = None, db: AsyncSession = Depends(get_db)):
+async def list_alerts(status: str | None = None, db: AsyncSession = Depends(get_db),
+                      user: dict = Depends(get_current_user)):
     stmt = select(AlertEvent).order_by(AlertEvent.created_at.desc())
     if status:
         stmt = stmt.where(AlertEvent.status == status)
@@ -44,7 +50,8 @@ async def list_alerts(status: str | None = None, db: AsyncSession = Depends(get_
 
 
 @router.patch("/{alert_id}", response_model=AlertOut)
-async def update_alert(alert_id, payload: AlertUpdate, db: AsyncSession = Depends(get_db)):
+async def update_alert(alert_id: UUID, payload: AlertUpdate, db: AsyncSession = Depends(get_db),
+                       user: dict = Depends(get_current_user)):
     alert = await db.get(AlertEvent, alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -52,7 +59,7 @@ async def update_alert(alert_id, payload: AlertUpdate, db: AsyncSession = Depend
         alert.status = payload.status
     if payload.resolved_by:
         alert.resolved_by = payload.resolved_by
-        alert.resolved_at = __import__("datetime").datetime.utcnow()
+        alert.resolved_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(alert)
     return alert

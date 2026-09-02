@@ -3,6 +3,9 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import AlertEvent
+from ..tasks import enqueue_index
+from ..routers.websocket import manager
+from ..services.mqtt_service import mqtt_service
 from ..services.notify_service import notify
 
 
@@ -26,6 +29,27 @@ class AlertService:
         await db.commit()
         await db.refresh(alert)
 
+        await manager.broadcast({
+            "type": "alert",
+            "alert_id": str(alert.id),
+            "alert_type": alert_type,
+            "severity": severity,
+            "description": description,
+            "status": alert.status,
+            "zone": zone_name,
+            "camera": camera_name,
+            "created_at": alert.created_at.isoformat() if alert.created_at else None,
+        })
+
+        mqtt_service.publish("acuseek/alerts", {
+            "alert_id": str(alert.id),
+            "alert_type": alert_type,
+            "severity": severity,
+            "description": description,
+            "zone": zone_name,
+            "camera": camera_name,
+        })
+
         if severity in ("high", "critical") and alert_type in (
             "restricted_intrusion", "gate_forced", "unknown_vehicle",
         ):
@@ -34,6 +58,10 @@ class AlertService:
                 camera_name or "Unknown Camera",
                 snapshot_url,
             )
+
+        if snapshot_url:
+            enqueue_index(snapshot_url, camera_id=str(camera_id) if camera_id else None,
+                          metadata={"alert_id": str(alert.id), "alert_type": alert_type})
 
         return alert
 

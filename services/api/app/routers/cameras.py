@@ -6,9 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..models import Camera, Zone
-from ..schemas.camera import CameraCreate, CameraOut, ZoneCreate, ZoneOut
+from ..routers.auth import get_current_user
+from ..schemas.camera import CameraCreate, CameraOut, CameraUpdate, ZoneCreate, ZoneOut
 
-router = APIRouter(prefix="/cameras", tags=["cameras"])
+router = APIRouter(prefix="/cameras", tags=["cameras"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("", response_model=CameraOut)
@@ -47,3 +48,25 @@ async def camera_detail(camera_id: UUID, db: AsyncSession = Depends(get_db)):
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     return camera
+
+
+@router.patch("/{camera_id}", response_model=CameraOut)
+async def update_camera(camera_id: UUID, payload: CameraUpdate, db: AsyncSession = Depends(get_db)):
+    camera = await db.get(Camera, camera_id)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(camera, key, value)
+    await db.commit()
+    await db.refresh(camera)
+    return camera
+
+
+@router.delete("/{camera_id}")
+async def delete_camera(camera_id: UUID, db: AsyncSession = Depends(get_db)):
+    camera = await db.get(Camera, camera_id)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    await db.delete(camera)
+    await db.commit()
+    return {"deleted": str(camera_id)}

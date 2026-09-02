@@ -2,10 +2,12 @@ fastapi==0.115.*
 uvicorn[standard]==0.34.*
 sqlalchemy[asyncio]==2.0.*
 asyncpg==0.30.*
+pgvector>=0.3.0,<1.0
 pydantic-settings==2.7.*
 celery==5.4.*
 redis==5.2.*
 python-multipart==0.0.*
+PyJWT==2.9.*
 python-jose[cryptography]==3.3.*
 passlib[bcrypt]==1.7.*
 httpx==0.28.*
@@ -13,3 +15,5 @@ minio==7.2.*
 paho-mqtt==2.1.*
 jinja2==3.1.*
 pillow==11.*
+openpyxl==3.1.*
+tzdata==2025.*

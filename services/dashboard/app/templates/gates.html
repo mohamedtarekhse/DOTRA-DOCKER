@@ -5,34 +5,26 @@
 
 <div class="grid grid-cols-2 gap-6">
     <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">🚧 Gate 1 — Entry/Exit</h2>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm text-slate-500 mb-1">Plate Number</label>
-                <input type="text" class="border rounded w-full px-3 py-2" placeholder="e.g. ABC-1234">
-            </div>
-            <div class="flex gap-2">
-                <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Allow Entry</button>
-                <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Deny Entry</button>
-            </div>
-            <div class="mt-4 pt-4 border-t">
-                <h3 class="font-semibold text-sm mb-2">Pending Exit Approvals</h3>
-                <p class="text-sm text-slate-400">No pending approvals</p>
-            </div>
+    <h2 class="font-semibold mb-3">🚧 Gate 1 — Entry/Exit</h2>
+    <form method="post" action="/gates/gate1/override" class="space-y-4">
+        <div class="flex gap-2">
+            <input type="hidden" name="action" value="open">
+            <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Allow Entry (Open)</button>
         </div>
+    </form>
+    <div class="mt-4 pt-4 border-t">
+        <h3 class="font-semibold text-sm mb-2">Pending Exit Approvals</h3>
+        <p class="text-sm text-slate-400">Managed via Telegram bot notifications.</p>
     </div>
+</div>
     <div class="bg-white rounded-lg shadow p-5">
         <h2 class="font-semibold mb-3">🚧 Gate 2 — Entry/Exit</h2>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm text-slate-500 mb-1">Plate Number</label>
-                <input type="text" class="border rounded w-full px-3 py-2" placeholder="e.g. DEF-5678">
-            </div>
+        <form method="post" action="/gates/gate2/override" class="space-y-4">
             <div class="flex gap-2">
-                <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Allow Entry</button>
-                <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Deny Entry</button>
+                <input type="hidden" name="action" value="open">
+                <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Allow Entry (Open)</button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -40,10 +32,10 @@
     <h2 class="font-semibold mb-3">Manual Barrier Override</h2>
     <p class="text-sm text-slate-500 mb-3">Emergency override for security personnel.</p>
     <div class="flex gap-3">
-        <button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 1</button>
-        <button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 1</button>
-        <button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 2</button>
-        <button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 2</button>
+        <form method="post" action="/gates/gate1/override"><input type="hidden" name="action" value="close"><button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 1</button></form>
+        <form method="post" action="/gates/gate1/override"><input type="hidden" name="action" value="open"><button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 1</button></form>
+        <form method="post" action="/gates/gate2/override"><input type="hidden" name="action" value="close"><button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 2</button></form>
+        <form method="post" action="/gates/gate2/override"><input type="hidden" name="action" value="open"><button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 2</button></form>
     </div>
 </div>
 

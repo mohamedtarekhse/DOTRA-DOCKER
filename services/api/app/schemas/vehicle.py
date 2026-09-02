@@ -16,6 +16,16 @@ class VehicleCreate(BaseModel):
     requires_exit_permission: bool = True
 
 
+class VehicleUpdate(BaseModel):
+    owner_name: Optional[str] = None
+    owner_phone: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    color: Optional[str] = None
+    department: Optional[str] = None
+    is_whitelisted: Optional[bool] = None
+    requires_exit_permission: Optional[bool] = None
+
+
 class VehicleOut(VehicleCreate):
     id: UUID
     created_at: datetime

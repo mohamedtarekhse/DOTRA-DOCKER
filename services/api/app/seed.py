@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..database import get_db
+from .database import get_db
 
 
 async def seed_database():
-    """Seed zones + 40 cameras if empty. Called on startup."""
+    """Seed zones. Called on startup. Use seed_cameras.py to register 90 cameras."""
     async for db in get_db():
         count = await db.execute(text("SELECT COUNT(*) FROM zones"))
         if count.scalar() > 0:
@@ -23,7 +23,7 @@ async def seed_database():
             ("Restricted Zone 1", "restricted", True),
             ("Restricted Zone 2", "restricted", True),
         ]
-        from ..models import Zone
+        from .models import Zone
         zone_objs = []
         for name, ztype, restricted in zones:
             z = Zone(name=name, zone_type=ztype, is_restricted=restricted)

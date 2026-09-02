@@ -1,0 +1,25 @@
+# CPU-only build of the ACUSEEK AI engine.
+# Use this when there is NO NVIDIA GPU (Docker Cloud, Play with Docker, VPS).
+# Installers plain `onnxruntime` (CPU) instead of `onnxruntime-gpu`.
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip build-essential \
+    libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-cpu.txt .
+RUN pip install --no-cache-dir -r requirements-cpu.txt
+
+COPY . .
+
+ENV MODEL_DIR=/models
+ENV ACUSEEK_CPU_ONLY=1
+
+EXPOSE 8100
+
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]

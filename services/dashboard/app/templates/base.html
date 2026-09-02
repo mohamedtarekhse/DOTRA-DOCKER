@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
     <script defer src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js"></script>
+    <script defer src="/static/js/app.js"></script>
 </head>
 <body class="h-full">
 <div class="flex h-full">
@@ -20,6 +21,7 @@
             <a href="/" class="block px-4 py-2 rounded hover:bg-slate-800 transition">📊 Dashboard</a>
             <a href="/gates" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚧 Gates</a>
             <a href="/vehicles" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚗 Vehicles</a>
+            <a href="/preapprovals" class="block px-4 py-2 rounded hover:bg-slate-800 transition">📋 Pre-Approvals</a>
             <a href="/persons" class="block px-4 py-2 rounded hover:bg-slate-800 transition">👤 Persons</a>
             <a href="/search" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🔎 Image Search</a>
             <a href="/alerts" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚨 Alerts</a>
@@ -33,7 +35,11 @@
         <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
             <h1 class="text-lg font-semibold text-slate-800">{% block page_title %}{% endblock %}</h1>
             <div class="flex items-center gap-3">
+                <span id="sys-status" title="System status" class="text-green-600 font-bold">●</span>
                 <span id="alert-badge" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">0 alerts</span>
+                <form method="post" action="/logout">
+                    <button class="text-sm text-slate-500 hover:text-slate-800">Sign out</button>
+                </form>
             </div>
         </header>
         <div class="p-6">
