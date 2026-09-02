@@ -24,7 +24,7 @@ sudo usermod -aG docker "$USER"
 
 # 4. Install NVIDIA Drivers + Container Toolkit
 echo "=== Installing NVIDIA Driver + Container Toolkit ==="
-sudo apt-get install -y nvidia-driver-550 nvidia-utils-550
+sudo apt-get install -y nvidia-driver-535 nvidia-utils-535
 
 # NVIDIA Container Toolkit
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg

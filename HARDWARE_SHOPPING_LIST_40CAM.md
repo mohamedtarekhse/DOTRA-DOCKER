@@ -1,6 +1,9 @@
 # ACUSEEK — 40-Camera Hikvision Server & Hardware Shopping List 🇪🇬
 
 > **Target:** 40 Hikvision CCTV cameras · 2 LPR gates · 1x Mid-Range AI Server
+> **Production target is 90 cameras.** This list sizes the server and network for the
+> **initial 40-camera staging build**; scale to 90 by adding PoE switches + cameras
+> (server resources below already leave headroom: GPU 12GB, 64GB ECC, RAID-1 storage).
 > **Print this document and take it to your vendor. Every part has exact model numbers for easy searching.**
 > **Prices are approximate for the Egypt market (2025). Fluctuate with USD/EGP exchange.**
 > Check: **Sigma Computer**, **Delta Computer**, **Computer Mall (Bab El Louk)**, **Amazon.eg**, **Noon.com.eg**, **Techno 360**, **EGYPT PC**.

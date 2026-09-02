@@ -1,0 +1,32 @@
+# ============================================================
+# CPU-only override to test ACUSEEK WITHOUT an NVIDIA GPU.
+# Docker Cloud / Play with Docker / VPS have no GPU, so the
+# ai-engine must run on CPU (onnxruntime CPU) or be disabled.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.play.yml up --build
+#
+# This:
+#   - removes the GPU runtime requirement (ai-engine falls back to CPU)
+#   - uses the CPU ai-engine image (smaller, generic python base)
+#   - drops the cloudflared container (no tunnel token needed to test)
+#   - drops minio purely as demo (postgres still works standalone)
+# ============================================================
+
+services:
+  # ai-engine on CPU only — no GPU reservation
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile.cpu
+    runtime: ""
+    deploy:
+      resources: {}
+
+  # cloudflared needs a real token+domain; skip for a plain test
+  cloudflared:
+    profiles: ["remote"]
+    entrypoint: ["echo", "Cloudflared disabled in CPU test mode. Enable with --profile remote"]
+
+  # Optional: swap MinIO for local filesystem to reduce moving parts
+  # (kept enabled by default; if you prefer no object store, see README)

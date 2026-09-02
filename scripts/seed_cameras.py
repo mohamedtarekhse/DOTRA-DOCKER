@@ -1,4 +1,4 @@
-"""Pre-register 40 factory cameras + zones via the API.
+"""Pre-register 90 factory cameras + zones via the API.
 
 Run inside the api container:
     docker compose exec api python ./seed_cameras.py
@@ -9,6 +9,9 @@ import sys
 import httpx
 
 API_URL = os.environ.get("API_URL", "http://localhost:8001/api/v1")
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "acuseek")
 
 ZONES = [
     ("Gate 1", "gate", False),
@@ -33,10 +36,10 @@ CAMERA_PLAN = [
     ("Gate2-Face", "192.168.20.24", "face", 1, "admin", "camera_pass"),
 ]
 
-# Expand to 40 cameras across production/warehouse/loading zones
+# Expand to 90 cameras across production/warehouse/loading zones
 BASE_IP = 192
 count = len(CAMERA_PLAN)
-for i in range(count + 1, 41):
+for i in range(count + 1, 91):
     zone_idx = 2 + ((i - count - 1) % 6)  # distribute among zones 2..7
     CAMERA_PLAN.append(
         (f"Cam-{i:03d}", f"192.168.20.{i}", "fixed_bullet", zone_idx, "admin", "camera_pass")
@@ -45,6 +48,12 @@ for i in range(count + 1, 41):
 
 def seed():
     client = httpx.Client(timeout=10)
+    login = client.post(f"{API_URL}/auth/login",
+                        json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD})
+    if login.status_code != 200:
+        raise SystemExit(f"Login failed ({login.status_code}) — check ADMIN_USERNAME/ADMIN_PASSWORD")
+    client.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
+
     zone_ids = []
     zones = client.get(f"{API_URL}/cameras/zones").json()
     if not zones:

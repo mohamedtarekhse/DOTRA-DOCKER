@@ -11,7 +11,7 @@ cp .env.example .env     # edit secrets + Cloudflare tunnel token
 # 2. Start everything (builds + boots all containers)
 make up
 
-# 3. Register 40 cameras + zones
+# 3. Register 90 cameras + zones
 make seed
 ```
 
@@ -79,4 +79,4 @@ make backup     # pg_dump to ./backups
 ```
 
 ## Rollout reference
-See `HARDWARE_SHOPPING_LIST_40CAM.md` for the full hardware & Hikvision camera bill of materials.
+See `HARDWARE_SHOPPING_LIST_40CAM.md` for the 40-camera baseline hardware & Hikvision camera bill of materials (the 90-camera deployment is described in the root `PROCEDURE.md`).

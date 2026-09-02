@@ -27,14 +27,14 @@ services:
     image: redis:7-alpine
     container_name: acuseek_redis
     restart: unless-stopped
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD:-acuseek_redis_secret}"]
     volumes:
       - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
       - redisdata:/data
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-acuseek_redis_secret}\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,11 +46,14 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
+    ports:
+      - "9001:9001"
     volumes:
       - miniodata:/data
     command: server /data --console-address ":9001"
     networks:
       - backend
+      - frontend
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -79,12 +82,25 @@ services:
     image: eclipse-mosquitto:2
     container_name: acuseek_mosquitto
     restart: unless-stopped
+    environment:
+      MQTT_USER: ${MQTT_USER:-acuseek}
+      MQTT_PWD: ${MQTT_PASSWORD:-acuseek_mqtt_secret}
+    command: >
+      /bin/sh -c "mosquitto_passwd -b -c /mosquitto/config/mosquitto.passwd \"$$MQTT_USER\" \"$$MQTT_PWD\" && exec mosquitto -c /mosquitto/config/mosquitto.conf"
+    ports:
+      # 1883 is published for LAN relay controllers, but only with the
+      # MQTT_USER/MQTT_PASSWORD credentials set in .env (auth is mandatory).
+      - "1883:1883"
     volumes:
       - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-    ports:
-      - "1883:1883"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u \"$$MQTT_USER\" -P \"$$MQTT_PWD\" -t 'acuseek/health' -C 1 -W 2 & sleep 1; mosquitto_pub -h localhost -u \"$$MQTT_USER\" -P \"$$MQTT_PWD\" -t 'acuseek/health' -m ok; wait"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ---------------------------------------------------------------
   # APPLICATION SERVICES
@@ -95,17 +111,24 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-acuseek}:${POSTGRES_PASSWORD:-acuseek_secret}@postgres:5432/${POSTGRES_DB:-acuseek}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:-acuseek_redis_secret}@redis:6379/0
       MINIO_ENDPOINT: minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
-      MINIO_PUBLIC_BASE: http://192.168.10.50/media
+      MINIO_PUBLIC_BASE: http://${SERVER_LAN_IP:-192.168.10.50}/minio
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USERNAME: ${MQTT_USER:-acuseek}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-acuseek_mqtt_secret}
       AI_ENGINE_URL: http://ai-engine:8100
       LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
       JWT_SECRET: ${JWT_SECRET:-change_me_production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-acuseek}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-1440}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
       MEDIA_DIR: /media
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
     volumes:
@@ -129,10 +152,10 @@ services:
     build: ./services/api
     container_name: acuseek_celery
     restart: unless-stopped
-    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2 --beat
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-acuseek}:${POSTGRES_PASSWORD:-acuseek_secret}@postgres:5432/${POSTGRES_DB:-acuseek}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:-acuseek_redis_secret}@redis:6379/0
       MINIO_ENDPOINT: minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
@@ -178,6 +201,8 @@ services:
     environment:
       API_URL: http://api:8000/api/v1
       LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      LPR_CAMERAS: ${LPR_CAMERAS:-}
+      LPR_POLL_INTERVAL: ${LPR_POLL_INTERVAL:-5}
     depends_on:
       - api
     networks:
@@ -190,7 +215,10 @@ services:
     environment:
       API_URL: http://api:8000/api/v1
       AI_ENGINE_URL: http://ai-engine:8100
+      LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      RESTRICTED_CAMERAS: ${RESTRICTED_CAMERAS:-}
       MEDIA_DIR: /media
+      INTRUSION_COOLDOWN: ${INTRUSION_COOLDOWN:-60}
     volumes:
       - media:/media
     depends_on:
@@ -235,11 +263,10 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: acuseek_cloudflared
     restart: unless-stopped
-    command: tunnel --config /etc/cloudflared/config.yml run ${TUNNEL_NAME:-}
+    profiles: ["remote"]
+    command: ["sh", "-c", "if [ -z \"$$TUNNEL_TOKEN\" ]; then echo 'Cloudflared disabled - no TUNNEL_TOKEN set'; while true; do sleep 3600; done; else echo 'Starting Cloudflared tunnel'; exec cloudflared tunnel run --token \"$$TUNNEL_TOKEN\"; fi"]
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Set TUNNEL_TOKEN in .env}
-    volumes:
-      - ./infra/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     networks:
       - frontend
 

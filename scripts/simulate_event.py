@@ -6,15 +6,19 @@ Usage:
     python simulate_event.py --intrusion
 """
 import argparse
+import os
 import httpx
 
-API_URL = "http://localhost:8001/api/v1"
+API_URL = os.environ.get("API_URL", "http://localhost:8001/api/v1")
+LPR_SECRET = os.environ.get("LPR_EVENT_SECRET", "")
+SECRET_HEADERS = {"X-Secret": LPR_SECRET} if LPR_SECRET else {}
 
 
 def lpr(plate: str, direction: str):
     resp = httpx.post(
         f"{API_URL}/gates/lpr-event",
         json={"plate_number": plate, "direction": direction},
+        headers=SECRET_HEADERS,
         timeout=10,
     )
     print(f"LPR event -> {resp.status_code}: {resp.text}")

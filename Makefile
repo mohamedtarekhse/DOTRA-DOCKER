@@ -10,7 +10,7 @@ help:
 	@echo "  make ps        - list running services"
 	@echo "  make logs      - follow all logs"
 	@echo "  make build     - rebuild images"
-	@echo "  make seed      - seed 40 cameras + zones"
+	@echo "  make seed      - seed 90 cameras + zones"
 	@echo "  make backup    - backup postgres to ./backups"
 	@echo "  make status    - health status of services"
 
