@@ -17,7 +17,7 @@ async def main():
         cams = r.json()
         print(f"Cameras: {len(cams)}")
         for cam in cams:
-            print(f"  {cam['name']} ({cam['type']}) - {cam['ip_address']}")
+            print(f"  {cam.get('name','?')} ({cam.get('camera_type',cam.get('type','?'))}) - {cam.get('ip_address','?')}")
 
         # Image search (all)
         r = await c.get(f"{API}/search/images", headers=h, params={"q": "", "limit": 20})
@@ -40,13 +40,13 @@ async def main():
         vehs = r.json()
         print(f"Vehicles: {len(vehs)}")
         for v in vehs:
-            print(f"  {v['plate']} ({v['vehicle_type']}) - whitelisted={v.get('whitelisted', False)}")
+            print(f"  {v.get('plate','?')} ({v.get('vehicle_type','?')}) - whitelisted={v.get('whitelisted', False)}")
 
         # Persons count
         r = await c.get(f"{API}/persons", headers=h)
         persons = r.json()
         print(f"Persons: {len(persons)}")
         for p in persons:
-            print(f"  {p['full_name']} ({p['department']})")
+            print(f"  {p.get('full_name','?')} ({p.get('department','?')})")
 
 asyncio.run(main())
