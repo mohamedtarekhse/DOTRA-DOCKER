@@ -70,21 +70,32 @@ def bench(name, elapsed_ms):
 # ---------------------------------------------------------------------------
 from minio import Minio
 
+MEDIA_DIR = os.environ.get("MEDIA_DIR", "/media")
+
 
 def get_minio():
     return Minio(MINIO_ENDPOINT, access_key=MINIO_USER, secret_key=MINIO_PASS, secure=False)
 
 
-def upload_to_minio(client, bucket, data: bytes, ext="jpg") -> tuple:
-    """Returns (public_url, internal_url)."""
+def save_local(data: bytes, subdir: str, ext: str = "jpg") -> str:
+    """Save image to shared media volume and return the local file path."""
+    path = os.path.join(MEDIA_DIR, subdir)
+    os.makedirs(path, exist_ok=True)
+    fname = f"{uuid4().hex}.{ext}"
+    fpath = os.path.join(path, fname)
+    with open(fpath, "wb") as f:
+        f.write(data)
+    return fpath
+
+
+def upload_to_minio(client, bucket, data: bytes, ext="jpg") -> str:
+    """Upload to MinIO and return the public URL."""
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
     key = f"seed/{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}.{ext}"
     data_stream = io.BytesIO(data)
     client.put_object(bucket, key, data_stream, length=len(data), content_type=f"image/{ext}")
-    public = f"{MINIO_PUBLIC_BASE}/{bucket}/{key}"
-    internal = f"{MINIO_INTERNAL_URL}/{bucket}/{key}"
-    return public, internal
+    return f"{MINIO_PUBLIC_BASE}/{bucket}/{key}"
 
 
 # ---------------------------------------------------------------------------
@@ -506,6 +517,15 @@ async def run():
     # Phase 4: Generate + upload + embed 10 images
     # ------------------------------------------------------------------
     print("\n== Phase 4: Generate + Upload + Embed 10 Images ==")
+
+    # Clean up old seed data to avoid duplicates
+    async with SessionLocal() as db:
+        await db.execute(text("DELETE FROM image_embeddings WHERE image_id IN (SELECT id FROM image_store WHERE metadata::json->>'seed' = 'true')"))
+        await db.execute(text("DELETE FROM face_embeddings WHERE image_url LIKE '%/snapshots/seed/%'"))
+        await db.execute(text("DELETE FROM image_store WHERE metadata::json->>'seed' = 'true'"))
+        await db.commit()
+    print("  Cleaned old seed data")
+
     images = generate_test_images()
     minio = get_minio()
     image_records = []
@@ -519,18 +539,19 @@ async def run():
         img_bytes = buf.getvalue()
         print(f"  Size: {len(img_bytes)} bytes ({img_obj.size[0]}x{img_obj.size[1]})")
 
-        # Upload to MinIO
+        # Upload to MinIO (for dashboard) and save locally (for AI engine)
         t0 = time.time()
         bucket = "snapshots"
-        public_url, internal_url = upload_to_minio(minio, bucket, img_bytes, "jpg")
+        minio_url = upload_to_minio(minio, bucket, img_bytes, "jpg")
+        local_path = save_local(img_bytes, "snapshots", "jpg")
         bench(f"MinIO upload {filename}", (time.time() - t0) * 1000)
-        check(f"Upload {filename}", public_url.startswith("http"), public_url[:80])
+        check(f"Upload {filename}", minio_url.startswith("http"), minio_url[:80])
 
         # Get camera_id
         cam_name = IMAGE_CAMERA_MAP.get(idx, "Gate 1 LPR")
         camera_id = created_cameras.get(cam_name)
 
-        # Create ImageStore record (store public URL for dashboard display)
+        # Create ImageStore record (store MinIO public URL for dashboard display)
         async with SessionLocal() as db:
             img_id = uuid4()
             captured_at = datetime.now(timezone.utc) - timedelta(minutes=10 * (10 - idx))
@@ -539,16 +560,16 @@ async def run():
                     INSERT INTO image_store (id, camera_id, image_url, captured_at, metadata)
                     VALUES (:id, :cam, :url, :captured, :meta)
                 """),
-                {"id": str(img_id), "cam": camera_id, "url": public_url,
+                {"id": str(img_id), "cam": camera_id, "url": minio_url,
                  "captured": captured_at, "meta": json.dumps({"filename": filename, "seed": True})},
             )
             await db.commit()
 
-        # AI: CLIP embedding (embed/image) — use internal URL for AI engine
+        # AI: CLIP embedding (embed/image) — use local file path (shared volume)
         t0 = time.time()
         try:
             async with httpx.AsyncClient(timeout=60) as ai:
-                r = await ai.post(f"{AI_ENGINE_URL}/embed/image", json={"image_url": internal_url})
+                r = await ai.post(f"{AI_ENGINE_URL}/embed/image", json={"image_url": local_path})
                 if r.status_code == 200:
                     clip_data = r.json()
                     clip_vec = clip_data.get("embedding", [])
@@ -576,7 +597,7 @@ async def run():
             bench("CLIP embed " + filename, (time.time() - t0) * 1000)
             check(f"CLIP embedding {filename}", False, str(e)[:100])
 
-        image_records.append((idx, filename, public_url, internal_url, img_id))
+        image_records.append((idx, filename, minio_url, local_path, img_id))
 
     # ------------------------------------------------------------------
     # Phase 5: Face embedding for person
@@ -682,15 +703,14 @@ async def run():
                         async with SessionLocal() as db:
                             t1 = time.time()
                             result = await db.execute(
-                                text("""
+                                text(f"""
                                     SELECT ie.image_id, is2.image_url,
-                                           1 - (ie.clip_embedding <=> :vec::vector) AS score
+                                           1 - (ie.clip_embedding <=> '{vec_str}'::vector) AS score
                                     FROM image_embeddings ie
                                     JOIN image_store is2 ON is2.id = ie.image_id
-                                    ORDER BY ie.clip_embedding <=> :vec::vector
+                                    ORDER BY ie.clip_embedding <=> '{vec_str}'::vector
                                     LIMIT 3
                                 """),
-                                {"vec": vec_str},
                             )
                             rows = result.fetchall()
                             bench(f"pgvector search '{query}'", (time.time() - t1) * 1000)
