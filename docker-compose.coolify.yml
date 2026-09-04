@@ -1,0 +1,227 @@
+services:
+  # ---------------------------------------------------------------
+  # DATABASE & CACHE LAYER
+  # ---------------------------------------------------------------
+  postgres:
+    image: acuseek-postgres:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-acuseek}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-acuseek_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-acuseek}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-acuseek}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: acuseek-redis:latest
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD:-acuseek_redis_secret}"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-acuseek_redis_secret}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
+    ports:
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-acuseek} ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret};
+      mc mb -p local/snapshots || true;
+      mc mb -p local/face-crops || true;
+      mc mb -p local/plate-crops || true;
+      mc mb -p local/video-clips || true;
+      exit 0;
+      "
+
+  mosquitto:
+    image: acuseek-mosquitto:latest
+    restart: unless-stopped
+    environment:
+      MQTT_USER: ${MQTT_USER:-acuseek}
+      MQTT_PWD: ${MQTT_PASSWORD:-acuseek_mqtt_secret}
+    command: >
+      /bin/sh -c "mosquitto_passwd -b -c /mosquitto/config/mosquitto.passwd \"$$MQTT_USER\" \"$$MQTT_PWD\" && chown mosquitto:mosquitto /mosquitto/config/mosquitto.passwd /mosquitto/data && exec mosquitto -c /mosquitto/config/mosquitto.conf"
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -u \"$$MQTT_USER\" -P \"$$MQTT_PWD\" -t 'acuseek/health' -C 1 -W 2 & sleep 1; mosquitto_pub -h localhost -u \"$$MQTT_USER\" -P \"$$MQTT_PWD\" -t 'acuseek/health' -m ok; wait"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------
+  # APPLICATION SERVICES
+  # ---------------------------------------------------------------
+  api:
+    image: acuseek-api:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-acuseek}:${POSTGRES_PASSWORD:-acuseek_secret}@postgres:5432/${POSTGRES_DB:-acuseek}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-acuseek_redis_secret}@redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
+      MINIO_PUBLIC_BASE: http://${SERVER_LAN_IP:-192.168.10.50}/minio
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USERNAME: ${MQTT_USER:-acuseek}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-acuseek_mqtt_secret}
+      AI_ENGINE_URL: http://ai-engine:8100
+      LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      JWT_SECRET: ${JWT_SECRET:-change_me_production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-acuseek}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-1440}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+      MEDIA_DIR: /media
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    volumes:
+      - media:/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ai-engine:
+        condition: service_started
+    ports:
+      - "8001:8000"
+
+  celery-worker:
+    image: acuseek-api:latest
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2 --beat
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-acuseek}:${POSTGRES_PASSWORD:-acuseek_secret}@postgres:5432/${POSTGRES_DB:-acuseek}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-acuseek_redis_secret}@redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-acuseek}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
+      AI_ENGINE_URL: http://ai-engine:8100
+      MEDIA_DIR: /media
+    volumes:
+      - media:/media
+    depends_on:
+      - api
+
+  ai-engine:
+    image: acuseek-ai-engine:latest
+    restart: unless-stopped
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      MODEL_DIR: /models
+      NVIDIA_VISIBLE_DEVICES: all
+    volumes:
+      - ./data/models:/models
+      - media:/media
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  lpr-listener:
+    image: acuseek-lpr-listener:latest
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000/api/v1
+      LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      LPR_CAMERAS: ${LPR_CAMERAS:-}
+      LPR_POLL_INTERVAL: ${LPR_POLL_INTERVAL:-5}
+    depends_on:
+      - api
+
+  stream-processor:
+    image: acuseek-stream-processor:latest
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000/api/v1
+      AI_ENGINE_URL: http://ai-engine:8100
+      LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      RESTRICTED_CAMERAS: ${RESTRICTED_CAMERAS:-}
+      MEDIA_DIR: /media
+      INTRUSION_COOLDOWN: ${INTRUSION_COOLDOWN:-60}
+    volumes:
+      - media:/media
+    depends_on:
+      - api
+      - ai-engine
+
+  dashboard:
+    image: acuseek-dashboard:latest
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000/api/v1
+    depends_on:
+      - api
+
+  # ---------------------------------------------------------------
+  # REVERSE PROXY + REMOTE ACCESS
+  # ---------------------------------------------------------------
+  nginx:
+    image: acuseek-nginx:latest
+    restart: unless-stopped
+    volumes:
+      - media:/media:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - dashboard
+      - minio
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["remote"]
+    command: ["sh", "-c", "if [ -z \"$$TUNNEL_TOKEN\" ]; then echo 'Cloudflared disabled - no TUNNEL_TOKEN set'; while true; do sleep 3600; done; else echo 'Starting Cloudflared tunnel'; exec cloudflared tunnel run --token \"$$TUNNEL_TOKEN\"; fi"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  media:
