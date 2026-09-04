@@ -1,5 +1,5 @@
 import requests
-from requests_auth import DigestAuth
+from requests.auth import HTTPDigestAuth
 
 
 class ISAPIClient:
@@ -7,7 +7,7 @@ class ISAPIClient:
 
     def __init__(self, ip: str, username: str, password: str, port: int = 80):
         self.base = f"http://{ip}:{port}"
-        self.auth = DigestAuth(username, password)
+        self.auth = HTTPDigestAuth(username, password)
         self.timeout = 5
 
     def get_plate_recognition_url(self) -> str:
