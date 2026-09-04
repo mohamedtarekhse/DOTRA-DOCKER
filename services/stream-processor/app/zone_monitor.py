@@ -86,7 +86,7 @@ def monitor_loop():
     # env var (Coolify-friendly). Each entry:
     # {"zone": ..., "camera": ..., "rtsp": "rtsp://user:pass@ip:554/Streaming/Channels/101"}
     import json as _json
-    _cams = os.environ.get("RESTRICTED_CAMERAS", "[]")
+    _cams = os.environ.get("RESTRICTED_CAMERAS") or "[]"
     RESTRICTED_CAMERAS = _json.loads(_cams)
 
     monitors = []

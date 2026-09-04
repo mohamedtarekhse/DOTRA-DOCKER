@@ -18,7 +18,7 @@ POLL_INTERVAL = float(os.environ.get("LPR_POLL_INTERVAL", "5"))
 # Configure LPR cameras here OR via the LPR_CAMERAS JSON env var (Coolify-friendly).
 # Each entry: {"name": ..., "ip": ..., "user": ..., "pass": ...}
 # Example: LPR_CAMERAS='[{"name":"Gate1-LPR1","ip":"192.168.20.11","user":"admin","pass":"pw"}]'
-LPR_CAMERAS = json.loads(os.environ.get("LPR_CAMERAS", "[]"))
+LPR_CAMERAS = json.loads(os.environ.get("LPR_CAMERAS") or "[]")
 
 # Dedup cache so a plate that stays in the camera's result list isn't re-sent.
 RECENT_LIMIT = 200

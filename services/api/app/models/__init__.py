@@ -128,7 +128,7 @@ class ImageStore(Base):
     camera_id = Column(Uuid(as_uuid=True), ForeignKey("cameras.id", ondelete="CASCADE"))
     image_url = Column(Text, nullable=False)
     captured_at = Column(DateTime(timezone=True), default=utc_now)
-    metadata = Column(JSON, default=dict)
+    store_metadata = Column("metadata", JSON, default=dict)
 
 
 class ImageEmbedding(Base):
