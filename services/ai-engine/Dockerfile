@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-dev build-essential \
     libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+    python-is-python3 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,4 +21,4 @@ ENV MODEL_DIR=/models
 
 EXPOSE 8100
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]
+CMD ["python3", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]
