@@ -1,13 +1,14 @@
 # CPU-only requirements — replaces onnxruntime-gpu with onnxruntime, and
 # torch CPU build. Keeps the same model weight downloads.
+--extra-index-url https://download.pytorch.org/whl/cpu
 insightface==0.7.*
 onnxruntime==1.20.*           # CPU build for sandbox / no-GPU hosts
 open-clip-torch==2.29.*
 ultralytics==8.3.*
 opencv-python-headless==4.10.*
 numpy>=1.24,<2.0
-torch==2.5.*
-torchvision==0.20.*
+torch==2.5.1+cpu                # +cpu wheel -> no CUDA deps (avoids multi-GB bloat)
+torchvision==0.20.1+cpu
 sentence-transformers==3.3.*
 fastapi==0.115.*
 uvicorn[standard]==0.34.*

@@ -1,11 +1,16 @@
+# GPU requirements — run on a host with an NVIDIA GPU + nvidia-container-toolkit.
+# onnxruntime (>=1.16 merge) ships the CUDA Execution Provider in the standard
+# wheel; onnxruntime-gpu is deprecated/merged. torch pins the cu121 build to
+# match the nvidia/cuda:12.1 base image.
+--extra-index-url https://download.pytorch.org/whl/cu121
 insightface==0.7.*
-onnxruntime-gpu==1.20.*
+onnxruntime==1.20.*
 open-clip-torch==2.29.*
 ultralytics==8.3.*
 opencv-python-headless==4.10.*
 numpy>=1.24,<2.0
-torch==2.5.*
-torchvision==0.20.*
+torch==2.5.1+cu121
+torchvision==0.20.1+cu121
 sentence-transformers==3.3.*
 fastapi==0.115.*
 uvicorn[standard]==0.34.*
