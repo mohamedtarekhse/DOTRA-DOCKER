@@ -405,11 +405,11 @@ async def run():
                 continue
 
             existing = await db.execute(
-                text("SELECT id FROM cameras WHERE ip_address = :ip"), {"ip": ip}
+                text("SELECT id FROM cameras WHERE ip_address = :ip LIMIT 1"), {"ip": ip}
             )
-            if existing.scalar_one_or_none():
-                cid = str(existing.scalar_one_or_none())
-                created_cameras[name] = cid
+            row = existing.first()
+            if row:
+                created_cameras[name] = str(row[0])
                 check(f"Camera {name} (already exists)", True, ip)
                 continue
 
@@ -451,9 +451,9 @@ async def run():
     async with SessionLocal() as db:
         for plate, owner, vtype, color, dept, wl, req_exit in vehicles_data:
             existing = await db.execute(
-                text("SELECT id FROM vehicles WHERE plate_number = :p"), {"p": plate}
+                text("SELECT id FROM vehicles WHERE plate_number = :p LIMIT 1"), {"p": plate}
             )
-            if existing.scalar_one_or_none():
+            if existing.first():
                 check(f"Vehicle {plate}", True, "(exists)")
                 continue
             vid = uuid4()
@@ -476,7 +476,7 @@ async def run():
     async with SessionLocal() as db:
         for emp_id, name, dept, access in PERSON_SEED_DATA:
             existing = await db.execute(
-                text("SELECT id FROM persons WHERE employee_id = :eid"), {"eid": emp_id}
+                text("SELECT id FROM persons WHERE employee_id = :eid LIMIT 1"), {"eid": emp_id}
             )
             row = existing.first()
             if row:
