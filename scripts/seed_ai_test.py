@@ -429,9 +429,10 @@ async def run():
 
     print(f"\n  Total cameras: {len(created_cameras)}")
     type_counts = {}
-    for name in created_cameras:
-        for _, _, ctype, _, _, _ in CAMERA_SEED_DATA:
-            if name in CAMERA_SEED_DATA[CAMERA_SEED_DATA.index((name, _, ctype, _, _, _))][0]:
+    for cam_name in created_cameras:
+        for cdata in CAMERA_SEED_DATA:
+            if cdata[0] == cam_name:
+                ctype = cdata[2]
                 type_counts[ctype] = type_counts.get(ctype, 0) + 1
                 break
     for t, c in type_counts.items():
