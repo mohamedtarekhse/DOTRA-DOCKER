@@ -133,6 +133,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-acuseek_minio_secret}
       AI_ENGINE_URL: http://ai-engine:8100
       MEDIA_DIR: /media
+      LPR_EVENT_SECRET: ${LPR_EVENT_SECRET:-lpr_secret}
+      JWT_SECRET: ${JWT_SECRET:-change_me_production}
     volumes:
       - media:/media
     depends_on:
