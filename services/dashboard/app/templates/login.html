@@ -1,31 +1,29 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACUSEEK — Sign in</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body class="h-full bg-slate-900">
-<div class="flex items-center justify-center min-h-screen px-4">
-    <div class="bg-white rounded-xl shadow-xl p-8 w-full max-w-md">
-        <div class="text-3xl mb-1">🔎 ACUSEEK</div>
-        <p class="text-slate-500 text-sm mb-6">Factory Monitoring — sign in to continue</p>
+<body>
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-brand"><span>🔎</span> ACUSEEK</div>
+        <p class="login-sub">Factory Monitoring — sign in to continue</p>
         {% if error %}
-        <div class="bg-red-100 text-red-700 text-sm rounded px-4 py-3 mb-4">Invalid username or password.</div>
+        <div class="msg msg-err">Invalid username or password.</div>
         {% endif %}
-        <form method="post" action="/login" class="space-y-4">
-            <div>
-                <label class="block text-sm text-slate-600 mb-1" for="username">Username</label>
-                <input id="username" name="username" type="text" autocomplete="username" required
-                       class="border border-slate-300 rounded px-3 py-2 w-full">
+        <form method="post" action="/login" class="form-group" style="gap:.6rem">
+            <div class="form-group">
+                <label class="label" for="username">Username</label>
+                <input class="input" id="username" name="username" type="text" autocomplete="username" required>
             </div>
-            <div>
-                <label class="block text-sm text-slate-600 mb-1" for="password">Password</label>
-                <input id="password" name="password" type="password" autocomplete="current-password" required
-                       class="border border-slate-300 rounded px-3 py-2 w-full">
+            <div class="form-group">
+                <label class="label" for="password">Password</label>
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
             </div>
-            <button class="bg-blue-600 text-white rounded px-4 py-2 w-full hover:bg-blue-700">Sign in</button>
+            <button class="btn btn-emphasis" type="submit" style="margin-top:.4rem">Sign in</button>
         </form>
     </div>
 </div>

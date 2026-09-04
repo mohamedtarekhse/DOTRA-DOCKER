@@ -1,49 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard</h1><span class="count">Overview</span>{% endblock %}
 {% block content %}
 
-<div class="grid grid-cols-4 gap-4 mb-6">
-    <div class="bg-white p-5 rounded-lg shadow">
-        <div class="text-sm text-slate-500">Cameras</div>
-        <div class="text-3xl font-bold">{{ cameras|length }}</div>
+<div class="tile-grid">
+    <div class="tile">
+        <div class="tile-label">Cameras</div>
+        <div class="tile-value">{{ cameras|length }}</div>
+        <div class="tile-sub">registered</div>
     </div>
-    <div class="bg-white p-5 rounded-lg shadow">
-        <div class="text-sm text-slate-500">Whitelisted Vehicles</div>
-        <div class="text-3xl font-bold">{{ vehicles|length }}</div>
+    <div class="tile">
+        <div class="tile-label">Whitelisted Vehicles</div>
+        <div class="tile-value">{{ vehicles|length }}</div>
+        <div class="tile-sub">on the access list</div>
     </div>
-    <div class="bg-white p-5 rounded-lg shadow">
-        <div class="text-sm text-slate-500">Active Alerts</div>
-        <div class="text-3xl font-bold text-red-600">{{ alerts|length }}</div>
+    <div class="tile">
+        <div class="tile-label">Active Alerts</div>
+        <div class="tile-value" style="color:var(--error)">{{ alerts|length }}</div>
+        <div class="tile-sub">awaiting action</div>
     </div>
-    <div class="bg-white p-5 rounded-lg shadow">
-        <div class="text-sm text-slate-500">System Status</div>
-        <div class="text-3xl font-bold text-green-600">●</div>
+    <div class="tile">
+        <div class="tile-label">System Status</div>
+        <div class="tile-value"><span class="dot dot-ok"></span></div>
+        <div class="tile-sub">all systems nominal</div>
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Live Gate Feeds</h2>
-        <div class="grid grid-cols-2 gap-3 text-center text-sm text-slate-400">
-            <div class="bg-slate-100 rounded p-6">Gate 1 (LPR)</div>
-            <div class="bg-slate-100 rounded p-6">Gate 2 (LPR)</div>
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Recent Alerts
+            <a href="/alerts" class="btn tiny">View all</a>
+        </div>
+        <div class="card-body">
+            {% if alerts %}
+            <ul class="events-list">
+                {% for a in alerts[:8] %}
+                <li class="ev">
+                    <span class="dot {% if a.severity == 'critical' %}dot-err{% else %}dot-ok{% endif %}"></span>
+                    <div>
+                        <div class="t">{{ a.alert_type }} — <span class="badge
+                            {% if a.severity == 'critical' %}badge-error
+                            {% elif a.severity == 'high' %}badge-warn
+                            {% else %}badge-hint{% endif %}">{{ a.severity }}</span></div>
+                        <div class="s">{{ a.description }}</div>
+                        <div class="s">{{ a.created_at }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="fiori-table"><tr><td class="empty">No alerts</td></tr></div>
+            {% endif %}
         </div>
     </div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Recent Alerts</h2>
-        {% if alerts %}
-        <ul class="space-y-2 text-sm">
-            {% for a in alerts[:5] %}
-            <li class="flex justify-between border-b pb-2">
-                <span class="text-red-600">🚨 {{ a.alert_type }}</span>
-                <span class="text-slate-400">{{ a.created_at }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-slate-400 text-sm">No alerts</p>
-        {% endif %}
+
+    <div class="card">
+        <div class="card-header">Live Events
+            <span class="badge badge-info" id="livestream-badge">connected</span>
+        </div>
+        <div class="card-body">
+            <ul class="events-list" id="live-events">
+                <li class="ev"><div><div class="t">Listening for live gate &amp; alert events…</div><div class="s">Powered by WebSocket</div></div></li>
+            </ul>
+        </div>
     </div>
 </div>
 

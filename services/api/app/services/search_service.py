@@ -42,11 +42,11 @@ class SearchService:
             JOIN image_store is ON is.id = ie.image_id
             LEFT JOIN cameras c ON c.id = is.camera_id
             {self._conditions(camera_id, from_time, to_time)}
-            ORDER BY ie.clip_embedding <=> :vec_str::vector
+            ORDER BY ie.clip_embedding <=> '{vec_str}'::vector
             LIMIT :limit
         """
         cond_params = self._bind_params(camera_id, from_time, to_time)
-        result = await db.execute(text(sql), {**cond_params, "limit": limit, "vec_str": vec_str})
+        result = await db.execute(text(sql), {**cond_params, "limit": limit})
         rows = result.fetchall()
         return [
             {

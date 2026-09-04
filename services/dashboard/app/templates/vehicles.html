@@ -1,51 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Vehicles{% endblock %}
-{% block page_title %}Vehicle Whitelist{% endblock %}
+{% block page_title %}Vehicles</h1><span class="count">Whitelist</span>{% endblock %}
 {% block content %}
 
-<div class="bg-white rounded-lg shadow p-5 mb-6">
-    <h2 class="font-semibold mb-3">Add Vehicle</h2>
-    <form method="post" action="/vehicles/add" class="grid grid-cols-5 gap-3">
-        <input name="plate_number" type="text" placeholder="Plate Number" required
-               class="border rounded px-3 py-2">
-        <input name="owner_name" type="text" placeholder="Owner Name" class="border rounded px-3 py-2">
-        <input name="vehicle_type" type="text" placeholder="Vehicle Type" class="border rounded px-3 py-2">
-        <input name="department" type="text" placeholder="Department" class="border rounded px-3 py-2">
-        <button class="bg-blue-600 text-white rounded px-4 py-2">Add to Whitelist</button>
-    </form>
+<div class="card">
+    <div class="card-body">
+        <h3 style="margin:0 0 .8rem">Add Vehicle</h3>
+        <form method="post" action="/vehicles/add" class="form-grid">
+            <div class="form-group">
+                <label class="label">Plate Number</label>
+                <input class="input" name="plate_number" type="text" placeholder="e.g. ABC-1234" required>
+            </div>
+            <div class="form-group">
+                <label class="label">Owner Name</label>
+                <input class="input" name="owner_name" type="text" placeholder="Owner">
+            </div>
+            <div class="form-group">
+                <label class="label">Vehicle Type</label>
+                <input class="input" name="vehicle_type" type="text" placeholder="e.g. truck">
+            </div>
+            <div class="form-group">
+                <label class="label">Department</label>
+                <input class="input" name="department" type="text" placeholder="Department">
+            </div>
+            <div class="form-group">
+                <button class="btn btn-emphasis" type="submit">Add to Whitelist</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<div class="bg-white rounded-lg shadow p-5">
-    <table class="w-full text-sm">
-        <thead>
-            <tr class="text-left text-slate-500 border-b">
-                <th class="py-2">Plate</th>
-                <th>Owner</th>
-                <th>Type</th>
-                <th>Department</th>
-                <th>Whitelisted</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for v in vehicles %}
-            <tr class="border-b">
-                <td class="py-2 font-medium">{{ v.plate_number }}</td>
-                <td>{{ v.owner_name or '-' }}</td>
-                <td>{{ v.vehicle_type or '-' }}</td>
-                <td>{{ v.department or '-' }}</td>
-                <td>{% if v.is_whitelisted %}<span class="text-green-600">✓</span>{% else %}<span class="text-red-600">✗</span>{% endif %}</td>
-                <td>
-                    <form method="post" action="/vehicles/{{ v.id }}/delete" onsubmit="return confirm('Remove {{ v.plate_number }} from whitelist?');">
-                        <button class="text-red-600 text-xs">Remove</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" class="py-4 text-slate-400 text-center">No vehicles yet</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card">
+    <div class="card-header">Vehicle Whitelist</div>
+    <div class="card-body" style="padding:0">
+        <table class="fiori-table">
+            <thead>
+                <tr>
+                    <th>Plate</th><th>Owner</th><th>Type</th><th>Department</th>
+                    <th>Whitelisted</th><th>Exit Permission</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vehicles %}
+                <tr>
+                    <td class="mono">{{ v.plate_number }}</td>
+                    <td>{{ v.owner_name or '-' }}</td>
+                    <td>{{ v.vehicle_type or '-' }}</td>
+                    <td>{{ v.department or '-' }}</td>
+                    <td>
+                        {% if v.is_whitelisted %}<span class="badge badge-ok">Whitelisted</span>
+                        {% else %}<span class="badge badge-hint">Not</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if v.requires_exit_permission %}<span class="badge badge-warn">Required</span>
+                        {% else %}<span class="badge badge-info">Auto</span>{% endif %}
+                    </td>
+                    <td style="text-align:right">
+                        <form method="post" action="/vehicles/{{ v.id }}/delete" style="display:inline">
+                            <button class="btn btn-danger tiny" type="submit"
+                                    onclick="return confirm('Remove {{ v.plate_number }} from whitelist?');">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td class="empty" colspan="7">No vehicles yet — add one above.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% endblock %}

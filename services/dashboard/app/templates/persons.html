@@ -1,47 +1,97 @@
 {% extends "base.html" %}
 {% block title %}Persons{% endblock %}
-{% block page_title %}Personnel & Face Enrollment{% endblock %}
+{% block page_title %}Persons</h1><span class="count">Personnel &amp; Face Enrollment</span>{% endblock %}
 {% block content %}
 
-<div class="bg-white rounded-lg shadow p-5 mb-6">
-    <h2 class="font-semibold mb-3">Add Person</h2>
-    <form method="post" action="/persons/add" class="grid grid-cols-4 gap-3">
-        <input name="full_name" type="text" placeholder="Full Name" required class="border rounded px-3 py-2">
-        <input name="department" type="text" placeholder="Department" class="border rounded px-3 py-2">
-        <input name="access_level" type="text" placeholder="Access Level" value="standard" class="border rounded px-3 py-2">
-        <button class="bg-blue-600 text-white rounded px-4 py-2">Add Person</button>
-    </form>
+{% if msg == 'enrolled' %}
+<div class="msg msg-ok">Face embedding generated and enrolled successfully.</div>
+{% elif msg %}
+<div class="msg msg-err">{{ msg }}</div>
+{% elif error_msg %}
+<div class="msg msg-err">{{ error_msg }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <h3 style="margin:0 0 .8rem">Add Person</h3>
+        <form method="post" action="/persons/add" class="form-grid">
+            <div class="form-group">
+                <label class="label">Full Name</label>
+                <input class="input" name="full_name" type="text" placeholder="Full Name" required>
+            </div>
+            <div class="form-group">
+                <label class="label">Department</label>
+                <input class="input" name="department" type="text" placeholder="Department">
+            </div>
+            <div class="form-group">
+                <label class="label">Access Level</label>
+                <select class="select" name="access_level">
+                    <option value="standard">Standard</option>
+                    <option value="security">Security</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-emphasis" type="submit">Add Person</button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<div class="bg-white rounded-lg shadow p-5">
-    <h2 class="font-semibold mb-3">Enroll Face (Photo Upload)</h2>
-    <form class="flex gap-3 items-center">
-        <input type="file" accept="image/*" class="border rounded px-3 py-2">
-        <button class="bg-green-600 text-white rounded px-4 py-2">Generate Embedding & Enroll</button>
-    </form>
-</div>
-
-<table class="w-full text-sm bg-white rounded-lg shadow mt-6">
-    <thead>
-        <tr class="text-left text-slate-500 border-b">
-            <th class="py-2 px-5">Name</th>
-            <th>Department</th>
-            <th>Access Level</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for p in persons %}
-        <tr class="border-b">
-            <td class="py-2 px-5 font-medium">{{ p.full_name }}</td>
-            <td>{{ p.department or '-' }}</td>
-            <td>{{ p.access_level }}</td>
-            <td>{% if p.is_active %}<span class="text-green-600">Active</span>{% else %}<span class="text-red-600">Inactive</span>{% endif %}</td>
-        </tr>
+<div class="card">
+    <div class="card-body">
+        <h3 style="margin:0 0 .8rem">Enroll Face</h3>
+        <p style="margin:.3rem 0 .8rem; color:var(--fiori-text-secondary);font-size:.8rem">
+            Select a registered person and upload a clear front-facing photo to generate their face embedding.
+        </p>
+        {% if persons %}
+        <form method="post" action="/persons/enroll-upload" enctype="multipart/form-data" class="form-row">
+            <div class="form-group">
+                <label class="label">Person</label>
+                <select class="select" name="person_id" required>
+                    {% for p in persons %}
+                    <option value="{{ p.id }}">{{ p.full_name }} ({{ p.department or 'no dept' }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="label">Face Photo</label>
+                <input class="input" type="file" name="file" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-success" type="submit">Generate Embedding &amp; Enroll</button>
+            </div>
+        </form>
         {% else %}
-        <tr><td colspan="4" class="py-4 text-slate-400 text-center">No personnel registered</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+        <div class="msg msg-warn">Add a person first before enrolling a face.</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Personnel</div>
+    <div class="card-body" style="padding:0">
+        <table class="fiori-table">
+            <thead>
+                <tr><th>Name</th><th>Department</th><th>Access Level</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for p in persons %}
+                <tr>
+                    <td>{{ p.full_name }}</td>
+                    <td>{{ p.department or '-' }}</td>
+                    <td><span class="badge badge-info">{{ p.access_level }}</span></td>
+                    <td>
+                        {% if p.is_active %}<span class="badge badge-ok">Active</span>
+                        {% else %}<span class="badge badge-hint">Inactive</span>{% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td class="empty" colspan="4">No personnel registered.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% endblock %}

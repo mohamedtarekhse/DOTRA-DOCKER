@@ -1,51 +1,63 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACUSEEK — {% block title %}Factory Security{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="/static/css/styles.css">
     <script defer src="/static/js/app.js"></script>
 </head>
-<body class="h-full">
-<div class="flex h-full">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 text-slate-200 flex flex-col">
-        <div class="p-5 text-xl font-bold text-white border-b border-slate-700">
-            🔎 ACUSEEK
-            <div class="text-xs font-normal text-slate-400">Factory Monitoring</div>
+<body>
+    <!-- Shell bar -->
+    <header class="fiori-shell">
+        <div class="shell-left">
+            <a href="/" class="shell-product" style="color:#fff;text-decoration:none">
+                <span>🔎</span>
+                <span>ACUSEEK<span class="prod-sub"> Factory Security</span></span>
+            </a>
         </div>
-        <nav class="flex-1 p-3 space-y-1">
-            <a href="/" class="block px-4 py-2 rounded hover:bg-slate-800 transition">📊 Dashboard</a>
-            <a href="/gates" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚧 Gates</a>
-            <a href="/vehicles" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚗 Vehicles</a>
-            <a href="/preapprovals" class="block px-4 py-2 rounded hover:bg-slate-800 transition">📋 Pre-Approvals</a>
-            <a href="/persons" class="block px-4 py-2 rounded hover:bg-slate-800 transition">👤 Persons</a>
-            <a href="/search" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🔎 Image Search</a>
-            <a href="/alerts" class="block px-4 py-2 rounded hover:bg-slate-800 transition">🚨 Alerts</a>
-            <a href="/settings" class="block px-4 py-2 rounded hover:bg-slate-800 transition">⚙️ Settings</a>
-        </nav>
-        <div class="p-4 text-xs text-slate-500">© 2026 ACUSEEK</div>
-    </aside>
 
-    <!-- Main content -->
-    <main class="flex-1 overflow-y-auto">
-        <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
-            <h1 class="text-lg font-semibold text-slate-800">{% block page_title %}{% endblock %}</h1>
-            <div class="flex items-center gap-3">
-                <span id="sys-status" title="System status" class="text-green-600 font-bold">●</span>
-                <span id="alert-badge" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">0 alerts</span>
-                <form method="post" action="/logout">
-                    <button class="text-sm text-slate-500 hover:text-slate-800">Sign out</button>
-                </form>
+        <div class="shell-center">
+            <div class="shell-search" id="shell-search">
+                <input id="global-search" type="text" placeholder="Search plates, persons, or images…"
+                       autocomplete="off">
+                <span class="search-icon">⌕</span>
+                <div class="shell-search-dropdown" id="search-dd"></div>
             </div>
-        </header>
-        <div class="p-6">
-            {% block content %}{% endblock %}
         </div>
+
+        <div class="shell-right">
+            <span id="sys-status" class="shell-icon" title="System status">●</span>
+            <button class="shell-icon" id="alert-bell" title="Alerts" onclick="location.href='/alerts'">🔔
+                <span class="badge" id="alert-badge">0</span>
+            </button>
+            <div class="user-chip">
+                <span class="avatar">A</span>
+                <span>admin</span>
+            </div>
+            <form method="post" action="/logout">
+                <button class="btn-signout" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Nav tabs -->
+    <nav class="fiori-tabs">
+        <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/gates" class="{% if request.url.path == '/gates' %}active{% endif %}">Gates</a>
+        <a href="/vehicles" class="{% if request.url.path == '/vehicles' %}active{% endif %}">Vehicles</a>
+        <a href="/preapprovals" class="{% if request.url.path == '/preapprovals' %}active{% endif %}">Pre-Approvals</a>
+        <a href="/persons" class="{% if request.url.path == '/persons' %}active{% endif %}">Persons</a>
+        <a href="/alerts" class="{% if request.url.path == '/alerts' %}active{% endif %}">Alerts</a>
+        <a href="/settings" class="{% if request.url.path == '/settings' %}active{% endif %}">Settings</a>
+    </nav>
+
+    <main class="fiori-main">
+        <div class="page-top">
+            <h1 class="page-heading">{% block page_title %}{% endblock %}</h1>
+        </div>
+        {% block content %}{% endblock %}
     </main>
-</div>
 </body>
 </html>

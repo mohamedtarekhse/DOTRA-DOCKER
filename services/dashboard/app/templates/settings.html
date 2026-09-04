@@ -1,28 +1,127 @@
 {% extends "base.html" %}
 {% block title %}Settings{% endblock %}
-{% block page_title %}Settings{% endblock %}
+{% block page_title %}Settings</h1><span class="count">System Configuration</span>{% endblock %}
 {% block content %}
 
-<div class="grid grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Cameras</h2>
-        <p class="text-sm text-slate-500 mb-3">Manage camera registry, RTSP URLs and zone assignment.</p>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Add Camera</button>
+{% if msg == 'camera-added' %}
+<div class="msg msg-ok">Camera added successfully.</div>
+{% elif msg == 'zone-added' %}
+<div class="msg msg-ok">Zone added successfully.</div>
+{% elif msg %}
+<div class="msg msg-err">{{ msg }}</div>
+{% endif %}
+
+<!-- Zones -->
+<div class="card">
+    <div class="card-header">Zones <span class="count">{{ zones|length }}</span></div>
+    <div class="card-body">
+        <form method="post" action="/settings/zones/add" class="form-grid">
+            <div class="form-group">
+                <label class="label">Zone Name</label>
+                <input class="input" name="name" type="text" placeholder="e.g. Loading Dock A" required>
+            </div>
+            <div class="form-group">
+                <label class="label">Zone Type</label>
+                <select class="select" name="zone_type">
+                    <option value="gate">Gate</option>
+                    <option value="loading_dock">Loading Dock</option>
+                    <option value="warehouse">Warehouse</option>
+                    <option value="production">Production</option>
+                    <option value="restricted" selected>Restricted</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:.5rem">
+                <label class="label" style="margin:0">Restricted</label>
+                <input type="checkbox" name="is_restricted" style="width:1rem;height:1rem">
+            </div>
+            <div class="form-group">
+                <button class="btn btn-emphasis" type="submit">Add Zone</button>
+            </div>
+        </form>
+        {% if zones %}
+        <table class="fiori-table" style="margin-top:1rem">
+            <thead><tr><th>Zone</th><th>Type</th><th>Restricted</th></tr></thead>
+            <tbody>
+                {% for z in zones %}
+                <tr>
+                    <td>{{ z.name }}</td>
+                    <td><span class="badge badge-info">{{ z.zone_type }}</span></td>
+                    <td>{% if z.is_restricted %}<span class="badge badge-error">Yes</span>{% else %}No{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
     </div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Zone Rules</h2>
-        <p class="text-sm text-slate-500 mb-3">Configure restricted zones and alert thresholds.</p>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Edit Zones</button>
+</div>
+
+<!-- Cameras -->
+<div class="card">
+    <div class="card-header">Cameras <span class="count">{{ cameras|length }}</span></div>
+    <div class="card-body">
+        <form method="post" action="/settings/cameras/add" class="form-grid">
+            <div class="form-group">
+                <label class="label">Camera Name</label>
+                <input class="input" name="name" type="text" placeholder="e.g. Gate 1 LPR" required>
+            </div>
+            <div class="form-group">
+                <label class="label">IP Address</label>
+                <input class="input" name="ip_address" type="text" placeholder="e.g. 192.168.1.10" required>
+            </div>
+            <div class="form-group">
+                <label class="label">Type</label>
+                <select class="select" name="camera_type">
+                    <option value="lpr">LPR</option>
+                    <option value="cctv">CCTV</option>
+                    <option value="ptz">PTZ</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="label">RTSP URL</label>
+                <input class="input" name="rtsp_url" type="text" placeholder="rtsp://user:pass@ip:554/..." required>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-emphasis" type="submit">Add Camera</button>
+            </div>
+        </form>
+        {% if cameras %}
+        <table class="fiori-table" style="margin-top:1rem">
+            <thead><tr><th>Camera</th><th>IP</th><th>Type</th><th>Zone</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for c in cameras %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td class="mono">{{ c.ip_address }}</td>
+                    <td><span class="badge badge-info">{{ c.camera_type }}</span></td>
+                    <td>{{ c.zone_id or '-' }}</td>
+                    <td>{% if c.is_active %}<span class="badge badge-ok">Active</span>{% else %}<span class="badge badge-hint">Inactive</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
     </div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Notification Channels</h2>
-        <p class="text-sm text-slate-500 mb-3">Configure Telegram bot for manager alerts.</p>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Configure</button>
+</div>
+
+<!-- Placeholder cards for future features -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin:0 0 .5rem">Notification Channels</h3>
+            <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0">
+                Configure Telegram bot for manager alerts. Set <code>TELEGRAM_BOT_TOKEN</code>,
+                <code>TELEGRAM_CHAT_ID</code> and <code>TELEGRAM_WEBHOOK_SECRET</code> in the environment.
+            </p>
+        </div>
     </div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">Data Retention</h2>
-        <p class="text-sm text-slate-500 mb-3">Auto-cleanup of images older than 90 days.</p>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Configure</button>
+    <div class="card">
+        <div class="card-body">
+            <h3 style="margin:0 0 .5rem">Data Retention</h3>
+            <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0">
+                Auto-cleanup of indexed images older than 90 days.
+                Managed via the <code>cleanup_old_data</code> Celery beat task.
+            </p>
+        </div>
     </div>
 </div>
 

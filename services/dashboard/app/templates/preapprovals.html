@@ -1,97 +1,91 @@
 {% extends "base.html" %}
 {% block title %}Pre-Approvals{% endblock %}
-{% block page_title %}Vehicle Pre-Approvals{% endblock %}
+{% block page_title %}Pre-Approvals</h1><span class="count">Vehicle Permits</span>{% endblock %}
 {% block content %}
 
 {% if msg %}
-<div class="bg-green-100 border border-green-300 text-green-800 text-sm rounded px-4 py-3 mb-6">{{ msg }}</div>
+<div class="msg msg-ok">{{ msg }}</div>
 {% elif error_msg %}
-<div class="bg-red-100 border border-red-300 text-red-700 text-sm rounded px-4 py-3 mb-6">{{ error_msg }}</div>
+<div class="msg msg-err">{{ error_msg }}</div>
 {% endif %}
-
-<div class="bg-white rounded-lg shadow p-5 mb-6">
-    <h2 class="font-semibold mb-1">📋 Upload Daily Pre-Approval Sheet</h2>
-    <p class="text-sm text-slate-500 mb-4">
-        Upload an <strong>.xlsx</strong> file exported from Excel. The first row must be a header with a
-        <strong>plate</strong> column and a <strong>date</strong> column (one row per vehicle; an optional
-        <strong>notes</strong> column is allowed). Each row grants that vehicle entry AND exit for the
-        given day. New plates are added to the whitelist automatically.
-    </p>
-    <form method="post" action="/preapprovals/upload" enctype="multipart/form-data" class="flex gap-3 items-center">
-        <input type="file" name="file" accept=".xlsx" required
-               class="border border-slate-300 rounded px-3 py-2">
-        <button class="bg-blue-600 text-white rounded px-4 py-2">Upload Pre-Approvals</button>
-    </form>
-    <p class="text-sm text-slate-400 mt-3">Example first two rows:</p>
-    <pre class="text-xs bg-slate-50 rounded p-3 mt-1">plate,date
-ABC-1234,2026-09-03
-DEF-5678,2026-09-03</pre>
-</div>
 
 {% if not api_ok %}
-<div class="bg-red-50 text-red-600 text-sm rounded px-4 py-3">API unreachable — permit list could not be loaded.</div>
+<div class="msg msg-err">API unreachable — permit list could not be loaded.</div>
 {% endif %}
 
-<div class="grid grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">✓ Active Today</h2>
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-slate-500 border-b">
-                    <th class="py-2">Plate</th>
-                    <th>Valid Until</th>
-                    <th>By</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in active %}
-                <tr class="border-b">
-                    <td class="py-2 font-medium">{{ p.plate }}</td>
-                    <td class="text-slate-500">{{ p.valid_until[:16].replace('T', ' ') }}</td>
-                    <td class="text-slate-500">{{ p.authorized_by }}</td>
-                    <td>
-                        <form method="post" action="/preapprovals/{{ p.id }}/revoke"
-                              onsubmit="return confirm('Revoke pre-approval for {{ p.plate }}?');">
-                            <button class="text-red-600 text-xs">Revoke</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="py-4 text-slate-400 text-center">No active permits today</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="card">
+    <div class="card-body">
+        <h3 style="margin:0 0 .3rem">Upload Daily Pre-Approval Sheet</h3>
+        <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0 0 .8rem">
+            Upload an <strong>.xlsx</strong> file. Header must include a <strong>plate</strong> column and a
+            <strong>date</strong> column (optional <strong>notes</strong> column). Each row grants that vehicle
+            entry + exit for the given day.
+        </p>
+        <form method="post" action="/preapprovals/upload" enctype="multipart/form-data" class="form-row">
+            <div class="form-group">
+                <label class="label">Select .xlsx file</label>
+                <input class="input" type="file" name="file" accept=".xlsx" required>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-emphasis" type="submit">Upload Pre-Approvals</button>
+            </div>
+        </form>
+        <pre style="font-size:.75rem;background:var(--fiori-surface-sunken);border-radius:.25rem;padding:.6rem;margin-top:.5rem;overflow-x:auto">plate,date,notes
+ABC-1234,2026-09-03,Delivery truck
+DEF-5678,2026-09-03,VIP visitor</pre>
     </div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">⏳ Upcoming (next 14 days)</h2>
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-slate-500 border-b">
-                    <th class="py-2">Plate</th>
-                    <th>Valid From</th>
-                    <th>By</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in upcoming %}
-                <tr class="border-b">
-                    <td class="py-2 font-medium">{{ p.plate }}</td>
-                    <td class="text-slate-500">{{ p.valid_from[:16].replace('T', ' ') }}</td>
-                    <td class="text-slate-500">{{ p.authorized_by }}</td>
-                    <td>
-                        <form method="post" action="/preapprovals/{{ p.id }}/revoke"
-                              onsubmit="return confirm('Revoke pre-approval for {{ p.plate }}?');">
-                            <button class="text-red-600 text-xs">Revoke</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="py-4 text-slate-400 text-center">No upcoming permits</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Active Today <span class="count">{{ active|length }}</span></div>
+        <div class="card-body" style="padding:0">
+            <table class="fiori-table">
+                <thead><tr><th>Plate</th><th>Valid Until</th><th>By</th><th></th></tr></thead>
+                <tbody>
+                    {% for p in active %}
+                    <tr>
+                        <td class="mono">{{ p.plate }}</td>
+                        <td>{{ p.valid_until[:16].replace('T', ' ') }}</td>
+                        <td>{{ p.authorized_by }}</td>
+                        <td style="text-align:right">
+                            <form method="post" action="/preapprovals/{{ p.id }}/revoke" style="display:inline">
+                                <button class="btn btn-danger tiny" type="submit"
+                                        onclick="return confirm('Revoke pre-approval for {{ p.plate }}?');">Revoke</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td class="empty" colspan="4">No active permits today</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">Upcoming (next 14 days) <span class="count">{{ upcoming|length }}</span></div>
+        <div class="card-body" style="padding:0">
+            <table class="fiori-table">
+                <thead><tr><th>Plate</th><th>Valid From</th><th>By</th><th></th></tr></thead>
+                <tbody>
+                    {% for p in upcoming %}
+                    <tr>
+                        <td class="mono">{{ p.plate }}</td>
+                        <td>{{ p.valid_from[:16].replace('T', ' ') }}</td>
+                        <td>{{ p.authorized_by }}</td>
+                        <td style="text-align:right">
+                            <form method="post" action="/preapprovals/{{ p.id }}/revoke" style="display:inline">
+                                <button class="btn btn-danger tiny" type="submit"
+                                        onclick="return confirm('Revoke pre-approval for {{ p.plate }}?');">Revoke</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td class="empty" colspan="4">No upcoming permits</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

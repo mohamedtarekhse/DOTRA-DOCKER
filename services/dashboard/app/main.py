@@ -153,12 +153,19 @@ async def persons(request: Request):
     data, ok = await api_get(request, "/persons")
     if not ok:
         data = []
-    return await _html(request, "persons.html", {"persons": data, "api_ok": ok})
+    msg = request.query_params.get("msg", "")
+    error_msg = msg[6:] if msg.startswith("error:") else ""
+    msg = msg if not msg.startswith("error:") else ""
+    return await _html(request, "persons.html", {
+        "persons": data, "api_ok": ok,
+        "msg": msg, "error_msg": error_msg,
+    })
 
 
 @app.get("/search", response_class=HTMLResponse)
 async def search_page(request: Request):
-    return await _html(request, "search.html")
+    q = request.query_params.get("q", "")
+    return await _html(request, "search.html", {"q": q})
 
 
 @app.get("/alerts", response_class=HTMLResponse)
@@ -173,7 +180,12 @@ async def alerts_page(request: Request):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings(request: Request):
-    return await _html(request, "settings.html")
+    cameras, _ = await api_get(request, "/cameras")
+    zones, _ = await api_get(request, "/cameras/zones")
+    msg = request.query_params.get("msg", "")
+    return await _html(request, "settings.html", {
+        "cameras": cameras or [], "zones": zones or [], "msg": msg,
+    })
 
 
 @app.get("/preapprovals", response_class=HTMLResponse)
@@ -261,6 +273,41 @@ async def search_results(request: Request, q: str):
 
 
 # ---------------------------------------------------------------- actions
+@app.post("/settings/cameras/add")
+async def settings_camera_add(request: Request):
+    if not logged_in(request):
+        return RedirectResponse("/login", status_code=303)
+    form = await request.form()
+    payload = {
+        "name": (form.get("name") or "").strip(),
+        "ip_address": (form.get("ip_address") or "").strip(),
+        "camera_type": (form.get("camera_type") or "lpr").strip(),
+        "rtsp_url": (form.get("rtsp_url") or "").strip(),
+    }
+    if payload["name"] and payload["ip_address"] and payload["rtsp_url"]:
+        resp = await api_mutate(request, "POST", "/cameras", data=payload)
+        if resp is not None and resp.status_code == 200:
+            return RedirectResponse("/settings?msg=camera-added", status_code=303)
+    return RedirectResponse("/settings?msg=Failed+to+add+camera", status_code=303)
+
+
+@app.post("/settings/zones/add")
+async def settings_zone_add(request: Request):
+    if not logged_in(request):
+        return RedirectResponse("/login", status_code=303)
+    form = await request.form()
+    payload = {
+        "name": (form.get("name") or "").strip(),
+        "zone_type": (form.get("zone_type") or "general").strip(),
+        "is_restricted": form.get("is_restricted") == "on",
+    }
+    if payload["name"]:
+        resp = await api_mutate(request, "POST", "/cameras/zones", data=payload)
+        if resp is not None and resp.status_code == 200:
+            return RedirectResponse("/settings?msg=zone-added", status_code=303)
+    return RedirectResponse("/settings?msg=Failed+to+add+zone", status_code=303)
+
+
 @app.post("/vehicles/add")
 async def vehicles_add(request: Request):
     if not logged_in(request):
@@ -300,6 +347,39 @@ async def persons_add(request: Request):
     if payload["full_name"]:
         await api_mutate(request, "POST", "/persons", data=payload)
     return RedirectResponse("/persons", status_code=303)
+
+
+@app.post("/persons/enroll-upload")
+async def persons_enroll_upload(request: Request):
+    if not logged_in(request):
+        return RedirectResponse("/login", status_code=303)
+    form = await request.form()
+    person_id = str(form.get("person_id") or "")
+    upload = form.get("file")
+    if not person_id or upload is None or not getattr(upload, "filename", ""):
+        return RedirectResponse("/persons?msg=no-file", status_code=303)
+    content = await upload.read()
+    if not content:
+        return RedirectResponse("/persons?msg=empty", status_code=303)
+    try:
+        async with httpx.AsyncClient(timeout=90) as client:
+            resp = await client.post(
+                f"{API_URL}/persons/enroll-upload",
+                data={"person_id": person_id},
+                files={"file": (upload.filename, content, upload.content_type or "image/jpeg")},
+                headers=_auth_headers(request),
+            )
+    except httpx.HTTPError:
+        resp = None
+    if resp is None or resp.status_code != 200:
+        detail = ""
+        if resp is not None:
+            try:
+                detail = resp.json().get("detail", resp.text[:200])
+            except ValueError:
+                detail = resp.text[:200]
+        return RedirectResponse(f"/persons?msg=error:{detail}.", status_code=303)
+    return RedirectResponse("/persons?msg=enrolled", status_code=303)
 
 
 @app.post("/alerts/{alert_id}/update")

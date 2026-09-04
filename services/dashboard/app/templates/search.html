@@ -1,21 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Search{% endblock %}
-{% block page_title %}🔎 AcuSeek Image Search{% endblock %}
+{% block page_title %}Image Search</h1><span class="count">AcuSeek Text-to-Image</span>{% endblock %}
 {% block content %}
 
-<div class="bg-white rounded-lg shadow p-6">
-    <form class="flex gap-3 mb-6"
-          hx-get="/api/search-results"
-          hx-target="#search-results"
-          hx-trigger="submit">
-        <input name="q"
-               type="text"
-               placeholder="Describe what you're looking for... e.g. red forklift near loading dock, person in yellow vest"
-               class="border rounded flex-1 px-4 py-3 text-lg">
-        <button class="bg-blue-600 text-white px-6 py-3 rounded">Search</button>
-    </form>
-    <div id="search-results" class="grid grid-cols-3 gap-4">
-        <div class="col-span-3 text-slate-400 text-center py-10">Type a description to search surveillance snapshots.</div>
+<div class="card">
+    <div class="card-body">
+        <form class="form-row"
+              hx-get="/api/search-results"
+              hx-target="#search-results"
+              hx-trigger="submit">
+            <div class="form-group" style="flex:1">
+                <input class="input" name="q" type="text"
+                       placeholder="Describe what you're looking for — e.g. red forklift near loading dock, person in yellow vest…"
+                       value="{{ q }}"
+                       style="font-size:1rem;padding:.6rem 1rem" required>
+            </div>
+            <button class="btn btn-emphasis" type="submit" style="padding:.6rem 1.5rem">Search</button>
+        </form>
+    </div>
+</div>
+
+<div id="search-results" class="search-grid" style="margin-top:1rem">
+    <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--fiori-text-hint)">
+        Type a description to search surveillance snapshots.
     </div>
 </div>
 

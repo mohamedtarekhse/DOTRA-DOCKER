@@ -1,41 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Gates{% endblock %}
-{% block page_title %}Gate Control{% endblock %}
+{% block page_title %}Gates</h1><span class="count">Control &amp; Monitoring</span>{% endblock %}
 {% block content %}
 
-<div class="grid grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg shadow p-5">
-    <h2 class="font-semibold mb-3">🚧 Gate 1 — Entry/Exit</h2>
-    <form method="post" action="/gates/gate1/override" class="space-y-4">
-        <div class="flex gap-2">
-            <input type="hidden" name="action" value="open">
-            <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Allow Entry (Open)</button>
-        </div>
-    </form>
-    <div class="mt-4 pt-4 border-t">
-        <h3 class="font-semibold text-sm mb-2">Pending Exit Approvals</h3>
-        <p class="text-sm text-slate-400">Managed via Telegram bot notifications.</p>
-    </div>
-</div>
-    <div class="bg-white rounded-lg shadow p-5">
-        <h2 class="font-semibold mb-3">🚧 Gate 2 — Entry/Exit</h2>
-        <form method="post" action="/gates/gate2/override" class="space-y-4">
-            <div class="flex gap-2">
-                <input type="hidden" name="action" value="open">
-                <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Allow Entry (Open)</button>
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">Gate 1 <span class="badge badge-info">Entry / Exit</span></div>
+        <div class="card-body">
+            <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0 0 1rem">
+                Manual override: open or close the barrier for Gate 1.
+            </p>
+            <div class="form-row" style="gap:.5rem">
+                <form method="post" action="/gates/gate1/override">
+                    <input type="hidden" name="action" value="open">
+                    <button class="btn btn-success" type="submit">Open Gate 1</button>
+                </form>
+                <form method="post" action="/gates/gate1/override">
+                    <input type="hidden" name="action" value="close">
+                    <button class="btn btn-danger" type="submit">Close Gate 1</button>
+                </form>
             </div>
-        </form>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">Gate 2 <span class="badge badge-info">Entry / Exit</span></div>
+        <div class="card-body">
+            <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0 0 1rem">
+                Manual override: open or close the barrier for Gate 2.
+            </p>
+            <div class="form-row" style="gap:.5rem">
+                <form method="post" action="/gates/gate2/override">
+                    <input type="hidden" name="action" value="open">
+                    <button class="btn btn-success" type="submit">Open Gate 2</button>
+                </form>
+                <form method="post" action="/gates/gate2/override">
+                    <input type="hidden" name="action" value="close">
+                    <button class="btn btn-danger" type="submit">Close Gate 2</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="bg-white rounded-lg shadow p-5 mt-6">
-    <h2 class="font-semibold mb-3">Manual Barrier Override</h2>
-    <p class="text-sm text-slate-500 mb-3">Emergency override for security personnel.</p>
-    <div class="flex gap-3">
-        <form method="post" action="/gates/gate1/override"><input type="hidden" name="action" value="close"><button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 1</button></form>
-        <form method="post" action="/gates/gate1/override"><input type="hidden" name="action" value="open"><button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 1</button></form>
-        <form method="post" action="/gates/gate2/override"><input type="hidden" name="action" value="close"><button class="bg-slate-800 text-white px-4 py-2 rounded">Close Gate 2</button></form>
-        <form method="post" action="/gates/gate2/override"><input type="hidden" name="action" value="open"><button class="bg-slate-800 text-white px-4 py-2 rounded">Open Gate 2</button></form>
+<div class="card" style="margin-top:1rem">
+    <div class="card-header">Pending Exit Approvals</div>
+    <div class="card-body">
+        <p style="font-size:.8rem;color:var(--fiori-text-secondary);margin:0">
+            When a whitelisted vehicle exits and <code>requires_exit_permission</code> is true,
+            the gate holds the barrier and sends a Telegram notification to the manager for approval.
+            Approved/denied events appear in the WebSocket feed below.
+        </p>
     </div>
 </div>
 

@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +52,44 @@ async def enroll_face(payload: FaceEnrollIn, db: AsyncSession = Depends(get_db))
     db.add(face)
     await db.commit()
     return {"person_id": str(person.id), "enrolled": True, "dim": len(embedding)}
+
+
+@router.post("/enroll-upload")
+async def enroll_face_upload(
+    person_id: UUID = Form(...),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Enroll a face photo (multipart upload) -> store to MinIO -> AI embedding -> save."""
+    person = await db.get(Person, person_id)
+    if person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image file")
+    ext = (file.filename or "jpg").rsplit(".", 1)[-1].lower() or "jpg"
+    if ext not in ("jpg", "jpeg", "png", "webp", "bmp"):
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+    image_url = storage.save_image("face-crops", data, ext if ext in ("jpg", "png") else "jpg")
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.post(
+            f"{settings.AI_ENGINE_URL}/face/embed",
+            json={"image_url": image_url},
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="AI engine face embedding failed")
+        embedding = resp.json()["embedding"]
+
+    face = FaceEmbedding(
+        person_id=person.id,
+        embedding=embedding,
+        sample_image_url=image_url,
+    )
+    db.add(face)
+    await db.commit()
+    return {"person_id": str(person.id), "enrolled": True, "dim": len(embedding), "image_url": image_url}
 
 
 @router.post("/match")
