@@ -581,12 +581,12 @@ async def run():
                     async with SessionLocal() as db2:
                         emb_id = uuid4()
                         await db2.execute(
-                            text("""
+                            text(f"""
                                 INSERT INTO image_embeddings (id, image_id, clip_embedding, created_at)
-                                VALUES (:id, :img_id, :vec::vector, :now)
+                                VALUES (:id, :img_id, '{vec_str}'::vector, :now)
                             """),
                             {"id": str(emb_id), "img_id": str(img_id),
-                             "vec": vec_str, "now": datetime.now(timezone.utc)},
+                             "now": datetime.now(timezone.utc)},
                         )
                         await db2.commit()
                     check(f"Store CLIP embedding {filename}", True)
@@ -621,12 +621,12 @@ async def run():
                     async with SessionLocal() as db:
                         fe_id = uuid4()
                         await db.execute(
-                            text("""
+                            text(f"""
                                 INSERT INTO face_embeddings (id, person_id, embedding, sample_image_url, created_at)
-                                VALUES (:id, :pid, :vec::vector, :url, :now)
+                                VALUES (:id, :pid, '{vec_str}'::vector, :url, :now)
                             """),
                             {"id": str(fe_id), "pid": person_ids.get("EMP-001"),
-                              "vec": vec_str, "url": face_img_public,
+                             "url": face_img_public,
                              "now": datetime.now(timezone.utc)},
                         )
                         await db.commit()
