@@ -1,4 +1,5 @@
 import httpx
+from uuid import UUID
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

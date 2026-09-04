@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "termius": {
+      "source": "membranedev/application-skills",
+      "sourceType": "github",
+      "skillPath": "skills/termius/SKILL.md",
+      "computedHash": "80a363ef001cbbb13c8bafe185f800ea246a3c85845aa5c381127f99cce8293c"
+    }
+  }
+}
