@@ -18,7 +18,7 @@ engine = create_async_engine(
 @event.listens_for(engine.sync_engine, "connect")
 def _register_pgvector_codec(dbapi_connection, connection_record):
     """Enable pgvector <-> Python list serialization on asyncpg."""
-    register_vector(dbapi_connection)
+    dbapi_connection.run_async(lambda conn: register_vector(conn))
 
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
