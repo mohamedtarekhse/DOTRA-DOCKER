@@ -77,7 +77,8 @@ def upload_to_minio(client, bucket, data: bytes, ext="jpg") -> str:
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
     key = f"seed/{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}.{ext}"
-    client.put_object(bucket, key, data, length=len(data), content_type=f"image/{ext}")
+    data_stream = io.BytesIO(data)
+    client.put_object(bucket, key, data_stream, length=len(data), content_type=f"image/{ext}")
     return f"{MINIO_PUBLIC_BASE}/{bucket}/{key}"
 
 
