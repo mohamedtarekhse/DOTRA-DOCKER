@@ -83,7 +83,7 @@ services:
       MQTT_USER: ${MQTT_USER:-acuseek}
       MQTT_PWD: ${MQTT_PASSWORD:-acuseek_mqtt_secret}
     command: >
-      /bin/sh -c "mosquitto_passwd -b -c /mosquitto/config/mosquitto.passwd \"$$MQTT_USER\" \"$$MQTT_PWD\" && exec mosquitto -c /mosquitto/config/mosquitto.conf"
+      /bin/sh -c "mosquitto_passwd -b -c /mosquitto/config/mosquitto.passwd \"$$MQTT_USER\" \"$$MQTT_PWD\" && chown mosquitto:mosquitto /mosquitto/config/mosquitto.passwd /mosquitto/data && exec mosquitto -c /mosquitto/config/mosquitto.conf"
     ports:
       # 1883 is published for LAN relay controllers, but only with the
       # MQTT_USER/MQTT_PASSWORD credentials set in .env (auth is mandatory).
