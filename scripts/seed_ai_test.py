@@ -521,7 +521,7 @@ async def run():
     # Clean up old seed data to avoid duplicates
     async with SessionLocal() as db:
         await db.execute(text("DELETE FROM image_embeddings WHERE image_id IN (SELECT id FROM image_store WHERE metadata::json->>'seed' = 'true')"))
-        await db.execute(text("DELETE FROM face_embeddings WHERE image_url LIKE '%/snapshots/seed/%'"))
+        await db.execute(text("DELETE FROM face_embeddings WHERE sample_image_url LIKE '%/snapshots/seed/%'"))
         await db.execute(text("DELETE FROM image_store WHERE metadata::json->>'seed' = 'true'"))
         await db.commit()
     print("  Cleaned old seed data")
