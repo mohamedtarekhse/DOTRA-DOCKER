@@ -35,12 +35,12 @@ class SearchService:
         vec_str = "[" + ",".join(frags) + "]"
 
         sql = f"""
-            SELECT ie.image_id, is.image_url, is.captured_at,
+            SELECT ie.image_id, img_store.image_url, img_store.captured_at,
                    c.name as camera_name,
                    1 - (ie.clip_embedding <=> '{vec_str}'::vector) AS score
             FROM image_embeddings ie
-            JOIN image_store is ON is.id = ie.image_id
-            LEFT JOIN cameras c ON c.id = is.camera_id
+            JOIN image_store img_store ON img_store.id = ie.image_id
+            LEFT JOIN cameras c ON c.id = img_store.camera_id
             {self._conditions(camera_id, from_time, to_time)}
             ORDER BY ie.clip_embedding <=> '{vec_str}'::vector
             LIMIT :limit
@@ -63,11 +63,11 @@ class SearchService:
     def _conditions(camera_id, from_time, to_time) -> str:
         conds = ["1=1"]
         if camera_id:
-            conds.append("is.camera_id = :camera_id")
+            conds.append("img_store.camera_id = :camera_id")
         if from_time:
-            conds.append("is.captured_at >= :from_time")
+            conds.append("img_store.captured_at >= :from_time")
         if to_time:
-            conds.append("is.captured_at <= :to_time")
+            conds.append("img_store.captured_at <= :to_time")
         return "WHERE " + " AND ".join(conds)
 
     @staticmethod

@@ -100,7 +100,7 @@ class GateService:
         return {"event_id": str(event.id), "event_type": event_type, "decision": decision}
 
     async def resolve_exit(
-        self, db: AsyncSession, event_id: str, approved: bool, manager: str,
+        self, db: AsyncSession, event_id: str, approved: bool, approved_by: str,
     ) -> dict:
         try:
             event_uuid = UUID(event_id)
@@ -111,7 +111,7 @@ class GateService:
             return {"error": "event not found"}
 
         evt.event_type = "exit_granted" if approved else "exit_denied"
-        evt.approved_by = manager
+        evt.approved_by = approved_by
         await db.commit()
 
         await manager.broadcast({
@@ -120,7 +120,7 @@ class GateService:
             "event_type": evt.event_type,
             "plate": evt.plate_number,
             "approved": approved,
-            "manager": manager,
+            "manager": approved_by,
         })
 
         return {
