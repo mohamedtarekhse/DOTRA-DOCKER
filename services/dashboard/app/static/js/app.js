@@ -87,7 +87,7 @@ async function pollHealth() {
     const dot = document.getElementById('sys-status');
     if (!dot) return;
     try {
-        const resp = await fetch('/api/health');
+        const resp = await fetch('/health');
         dot.textContent = '●';
         dot.style.color = resp.ok ? '#188918' : '#bb0000';
     } catch (e) {
