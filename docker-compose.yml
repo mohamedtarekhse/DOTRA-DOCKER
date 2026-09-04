@@ -79,7 +79,7 @@ services:
       - backend
 
   mosquitto:
-    image: eclipse-mosquitto:2
+    build: ./services/mosquitto
     container_name: acuseek_mosquitto
     restart: unless-stopped
     environment:
@@ -91,8 +91,6 @@ services:
       # 1883 is published for LAN relay controllers, but only with the
       # MQTT_USER/MQTT_PASSWORD credentials set in .env (auth is mandatory).
       - "1883:1883"
-    volumes:
-      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     networks:
       - backend
     healthcheck:
