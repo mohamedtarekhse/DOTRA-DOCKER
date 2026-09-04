@@ -1,6 +1,6 @@
 """Celery task dispatch helpers (safe when broker/worker is unavailable)."""
 
-from ..workers.indexer_tasks import index_image  # noqa: F401
+from .workers.indexer_tasks import index_image  # noqa: F401
 
 MAX_SNAPSHOT_INDEX_QUEUE = 2000
 
