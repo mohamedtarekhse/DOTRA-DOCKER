@@ -36,6 +36,8 @@ MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "minio:9000")
 MINIO_USER = os.environ.get("MINIO_ROOT_USER", "acuseek")
 MINIO_PASS = os.environ.get("MINIO_ROOT_PASSWORD", "acuseek_minio_secret")
 MINIO_PUBLIC_BASE = os.environ.get("MINIO_PUBLIC_BASE", "http://89.169.112.175/minio")
+# Internal URL for AI engine to fetch images from MinIO (must be reachable inside Docker network)
+MINIO_INTERNAL_URL = os.environ.get("MINIO_INTERNAL_URL", "http://minio:9000")
 
 engine = create_async_engine(DATABASE_URL, pool_size=5)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -73,13 +75,16 @@ def get_minio():
     return Minio(MINIO_ENDPOINT, access_key=MINIO_USER, secret_key=MINIO_PASS, secure=False)
 
 
-def upload_to_minio(client, bucket, data: bytes, ext="jpg") -> str:
+def upload_to_minio(client, bucket, data: bytes, ext="jpg") -> tuple:
+    """Returns (public_url, internal_url)."""
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
     key = f"seed/{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}.{ext}"
     data_stream = io.BytesIO(data)
     client.put_object(bucket, key, data_stream, length=len(data), content_type=f"image/{ext}")
-    return f"{MINIO_PUBLIC_BASE}/{bucket}/{key}"
+    public = f"{MINIO_PUBLIC_BASE}/{bucket}/{key}"
+    internal = f"{MINIO_INTERNAL_URL}/{bucket}/{key}"
+    return public, internal
 
 
 # ---------------------------------------------------------------------------
@@ -517,15 +522,15 @@ async def run():
         # Upload to MinIO
         t0 = time.time()
         bucket = "snapshots"
-        url = upload_to_minio(minio, bucket, img_bytes, "jpg")
+        public_url, internal_url = upload_to_minio(minio, bucket, img_bytes, "jpg")
         bench(f"MinIO upload {filename}", (time.time() - t0) * 1000)
-        check(f"Upload {filename}", url.startswith("http"), url[:80])
+        check(f"Upload {filename}", public_url.startswith("http"), public_url[:80])
 
         # Get camera_id
         cam_name = IMAGE_CAMERA_MAP.get(idx, "Gate 1 LPR")
         camera_id = created_cameras.get(cam_name)
 
-        # Create ImageStore record
+        # Create ImageStore record (store public URL for dashboard display)
         async with SessionLocal() as db:
             img_id = uuid4()
             captured_at = datetime.now(timezone.utc) - timedelta(minutes=10 * (10 - idx))
@@ -534,16 +539,16 @@ async def run():
                     INSERT INTO image_store (id, camera_id, image_url, captured_at, metadata)
                     VALUES (:id, :cam, :url, :captured, :meta)
                 """),
-                {"id": str(img_id), "cam": camera_id, "url": url,
+                {"id": str(img_id), "cam": camera_id, "url": public_url,
                  "captured": captured_at, "meta": json.dumps({"filename": filename, "seed": True})},
             )
             await db.commit()
 
-        # AI: CLIP embedding (embed/image)
+        # AI: CLIP embedding (embed/image) — use internal URL for AI engine
         t0 = time.time()
         try:
             async with httpx.AsyncClient(timeout=60) as ai:
-                r = await ai.post(f"{AI_ENGINE_URL}/embed/image", json={"image_url": url})
+                r = await ai.post(f"{AI_ENGINE_URL}/embed/image", json={"image_url": internal_url})
                 if r.status_code == 200:
                     clip_data = r.json()
                     clip_vec = clip_data.get("embedding", [])
@@ -571,13 +576,14 @@ async def run():
             bench("CLIP embed " + filename, (time.time() - t0) * 1000)
             check(f"CLIP embedding {filename}", False, str(e)[:100])
 
-        image_records.append((idx, filename, url, img_id))
+        image_records.append((idx, filename, public_url, internal_url, img_id))
 
     # ------------------------------------------------------------------
     # Phase 5: Face embedding for person
     # ------------------------------------------------------------------
     print("\n== Phase 5: Face Embedding Test ==")
-    face_img_url = image_records[9][2]  # face enrollment image
+    face_img_url = image_records[9][3]  # face enrollment image (internal URL for AI)
+    face_img_public = image_records[9][2]  # public URL for storage
 
     t0 = time.time()
     try:
@@ -599,7 +605,7 @@ async def run():
                                 VALUES (:id, :pid, :vec::vector, :url, :now)
                             """),
                             {"id": str(fe_id), "pid": person_ids.get("EMP-001"),
-                             "vec": vec_str, "url": face_img_url,
+                              "vec": vec_str, "url": face_img_public,
                              "now": datetime.now(timezone.utc)},
                         )
                         await db.commit()
@@ -626,7 +632,7 @@ async def run():
     ]
 
     for img_idx, label in detect_targets:
-        url = image_records[img_idx][2]
+        url = image_records[img_idx][3]  # internal URL for AI engine
         t0 = time.time()
         try:
             async with httpx.AsyncClient(timeout=60) as ai:
