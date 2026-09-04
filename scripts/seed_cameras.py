@@ -4,7 +4,6 @@ Run inside the api container:
     docker compose exec api python ./seed_cameras.py
 """
 import os
-import sys
 
 import httpx
 
@@ -37,7 +36,6 @@ CAMERA_PLAN = [
 ]
 
 # Expand to 90 cameras across production/warehouse/loading zones
-BASE_IP = 192
 count = len(CAMERA_PLAN)
 for i in range(count + 1, 91):
     zone_idx = 2 + ((i - count - 1) % 6)  # distribute among zones 2..7

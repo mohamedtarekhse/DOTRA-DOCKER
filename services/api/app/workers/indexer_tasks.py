@@ -1,22 +1,10 @@
 import asyncio
-import threading
+import json
 
 import httpx
 
 from ..config import settings
 from .celery_app import celery_app
-
-
-def _run_async(coro):
-    result = {}
-
-    def runner():
-        result["value"] = asyncio.run(coro)
-
-    t = threading.Thread(target=runner)
-    t.start()
-    t.join()
-    return result["value"]
 
 
 @celery_app.task
@@ -41,7 +29,7 @@ def index_image(image_url: str, camera_id: str | None = None, metadata: dict | N
             "INSERT INTO image_store (camera_id, image_url, metadata) VALUES ($1, $2, $3::jsonb) RETURNING id",
             camera_id,
             image_url,
-            __import__("json").dumps(metadata or {}),
+            json.dumps(metadata or {}),
         )
         emb_str = "[" + ",".join(str(f"{v:.6f}") for v in embedding) + "]"
         await conn.execute(
@@ -52,7 +40,7 @@ def index_image(image_url: str, camera_id: str | None = None, metadata: dict | N
         await conn.close()
         return str(image_id)
 
-    return _run_async(_do())
+    return asyncio.run(_do())
 
 
 @celery_app.task
@@ -68,4 +56,4 @@ def cleanup_old_data(days: int = 90):
         await conn.close()
         return "cleaned"
 
-    return _run_async(_do())
+    return asyncio.run(_do())

@@ -10,17 +10,6 @@ class ISAPIClient:
         self.auth = HTTPDigestAuth(username, password)
         self.timeout = 5
 
-    def get_plate_recognition_url(self) -> str:
-        """ISAPI path to configure/config the ANPR engine."""
-        return "/ISAPI/Traffic/channels/1/vehicleDetect/plates"
-
-    def get_snapshot(self) -> bytes:
-        """Capture a JPEG snapshot from the camera."""
-        resp = requests.get(f"{self.base}/ISAPI/Streaming/channels/101/picture",
-                            auth=self.auth, timeout=self.timeout)
-        resp.raise_for_status()
-        return resp.content
-
     def get_plates(self) -> str:
         """Return the raw XML body of recent recognized plates (GET plates channel)."""
         resp = requests.get(f"{self.base}/ISAPI/Traffic/channels/1/vehicleDetect/plates",

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -29,8 +28,8 @@ class CameraBase(BaseModel):
     ip_address: str
     camera_type: str
     rtsp_url: str
-    isapi_url: Optional[str] = None
-    zone_id: Optional[UUID] = None
+    isapi_url: str | None = None
+    zone_id: UUID | None = None
     config: dict = Field(default_factory=dict)
 
 
@@ -39,14 +38,14 @@ class CameraCreate(CameraBase):
 
 
 class CameraUpdate(BaseModel):
-    name: Optional[str] = None
-    ip_address: Optional[str] = None
-    camera_type: Optional[str] = None
-    rtsp_url: Optional[str] = None
-    isapi_url: Optional[str] = None
-    zone_id: Optional[UUID] = None
-    is_active: Optional[bool] = None
-    config: Optional[dict] = None
+    name: str | None = None
+    ip_address: str | None = None
+    camera_type: str | None = None
+    rtsp_url: str | None = None
+    isapi_url: str | None = None
+    zone_id: UUID | None = None
+    is_active: bool | None = None
+    config: dict | None = None
 
 
 class CameraOut(CameraBase):

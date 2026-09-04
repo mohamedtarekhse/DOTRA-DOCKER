@@ -20,7 +20,3 @@ async def load_image(image_url: str) -> np.ndarray:
     if img is None:
         raise ValueError("Could not decode image")
     return img
-
-
-def to_rgb(img_bgr: np.ndarray) -> np.ndarray:
-    return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)

@@ -30,6 +30,4 @@ async def seed_database():
             db.add(z)
             zone_objs.append(z)
         await db.commit()
-        for z in zone_objs:
-            await db.refresh(z)
         print(f"[SEED] Added {len(zone_objs)} zones")

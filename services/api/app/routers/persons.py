@@ -128,11 +128,12 @@ async def match_face(payload: FaceMatchIn, db: AsyncSession = Depends(get_db)):
 
 
 def _cosine(a, b) -> float:
+    import json
     import math
     if isinstance(a, str):
-        a = __import__("json").loads(a)
+        a = json.loads(a)
     if isinstance(b, str):
-        b = __import__("json").loads(b)
+        b = json.loads(b)
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(y * y for y in b))

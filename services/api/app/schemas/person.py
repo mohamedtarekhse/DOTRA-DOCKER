@@ -1,14 +1,13 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
 
 class PersonCreate(BaseModel):
-    employee_id: Optional[str] = None
+    employee_id: str | None = None
     full_name: str
-    department: Optional[str] = None
+    department: str | None = None
     access_level: str = "standard"
 
 

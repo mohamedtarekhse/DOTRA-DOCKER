@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -28,7 +27,7 @@ async def create_vehicle(payload: VehicleCreate, db: AsyncSession = Depends(get_
 
 @router.get("", response_model=list[VehicleOut])
 async def list_vehicles(
-    q: Optional[str] = None,
+    q: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     stmt = select(Vehicle)
